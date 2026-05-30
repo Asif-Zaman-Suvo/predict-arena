@@ -1,0 +1,18 @@
+[
+  { "id": "metlife",       "name": "MetLife Stadium",          "city": "East Rutherford", "country": "USA",    "capacity": 82500, "timezone": "America/New_York"    },
+  { "id": "att",           "name": "AT&T Stadium",              "city": "Arlington",        "country": "USA",    "capacity": 80000, "timezone": "America/Chicago"     },
+  { "id": "sofi",          "name": "SoFi Stadium",              "city": "Inglewood",        "country": "USA",    "capacity": 70240, "timezone": "America/Los_Angeles" },
+  { "id": "levis",         "name": "Levi's Stadium",            "city": "Santa Clara",      "country": "USA",    "capacity": 68500, "timezone": "America/Los_Angeles" },
+  { "id": "mercedes-benz", "name": "Mercedes-Benz Stadium",     "city": "Atlanta",          "country": "USA",    "capacity": 72000, "timezone": "America/New_York"    },
+  { "id": "arrowhead",     "name": "Arrowhead Stadium",         "city": "Kansas City",      "country": "USA",    "capacity": 76416, "timezone": "America/Chicago"     },
+  { "id": "allegiant",     "name": "Allegiant Stadium",         "city": "Las Vegas",        "country": "USA",    "capacity": 65000, "timezone": "America/Los_Angeles" },
+  { "id": "rose-bowl",     "name": "Rose Bowl",                 "city": "Pasadena",         "country": "USA",    "capacity": 88500, "timezone": "America/Los_Angeles" },
+  { "id": "gillette",      "name": "Gillette Stadium",          "city": "Foxborough",       "country": "USA",    "capacity": 65000, "timezone": "America/New_York"    },
+  { "id": "lincoln",       "name": "Lincoln Financial Field",   "city": "Philadelphia",     "country": "USA",    "capacity": 69796, "timezone": "America/New_York"    },
+  { "id": "hard-rock",     "name": "Hard Rock Stadium",         "city": "Miami Gardens",    "country": "USA",    "capacity": 65326, "timezone": "America/New_York"    },
+  { "id": "bc-place",      "name": "BC Place",                  "city": "Vancouver",        "country": "Canada", "capacity": 54500, "timezone": "America/Vancouver"   },
+  { "id": "bmo-field",     "name": "BMO Field",                 "city": "Toronto",          "country": "Canada", "capacity": 45736, "timezone": "America/Toronto"     },
+  { "id": "azteca",        "name": "Estadio Azteca",            "city": "Mexico City",      "country": "Mexico", "capacity": 87523, "timezone": "America/Mexico_City" },
+  { "id": "bbva",          "name": "Estadio BBVA",              "city": "Monterrey",        "country": "Mexico", "capacity": 53500, "timezone": "America/Monterrey"   },
+  { "id": "akron",         "name": "Estadio Akron",             "city": "Guadalajara",      "country": "Mexico", "capacity": 46232, "timezone": "America/Mexico_City" }
+]
