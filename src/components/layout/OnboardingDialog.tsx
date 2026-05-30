@@ -58,7 +58,7 @@ export function OnboardingDialog() {
               autoFocus={open}
               aria-label="Display name"
               aria-invalid={state?.ok === false}
-              className="bg-surface-2"
+              className="bg-surface-2 mt-2"
             />
             {state?.ok === false && (
               <p className="text-sm text-destructive" role="alert">
