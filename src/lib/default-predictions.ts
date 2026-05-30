@@ -1,7 +1,7 @@
 import matchesData from "@/src/data/matches.json"
 import type { MatchPrediction } from "@/src/types/predictions"
 
-/** Unpredicted — fixtures UI still displays 0-0. */
+/** Unpredicted — fixtures UI shows empty score inputs until both sides are set. */
 export function buildEmptyMatchPredictions(): Record<
   string,
   MatchPrediction | null

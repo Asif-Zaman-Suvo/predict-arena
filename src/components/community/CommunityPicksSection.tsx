@@ -1,12 +1,8 @@
 "use client"
 
-import {
-  communityPicks,
-  groups,
-  matches,
-  teams,
-} from "@/src/data"
+import { groups, matches, teams } from "@/src/data"
 import { buildTeamMap } from "@/src/lib/teams"
+import { useCommunityPicks } from "@/src/hooks/use-community-picks"
 import { CommunityPickBar } from "@/src/components/community/CommunityPickBar"
 import {
   Tabs,
@@ -18,14 +14,6 @@ import {
 const teamsById = buildTeamMap(teams)
 const matchesById = Object.fromEntries(matches.map((match) => [match.id, match]))
 
-const picksByGroup: Record<string, typeof communityPicks> = {}
-for (const group of groups) {
-  picksByGroup[group.id] = communityPicks.filter((pick) => {
-    const match = matchesById[pick.matchId]
-    return match?.groupId === group.id
-  })
-}
-
 interface CommunityPicksSectionProps {
   skeleton?: boolean
 }
@@ -33,7 +21,18 @@ interface CommunityPicksSectionProps {
 export function CommunityPicksSection({
   skeleton = false,
 }: CommunityPicksSectionProps) {
-  if (skeleton) {
+  const { picks, hydrated } = useCommunityPicks()
+  const showSkeleton = skeleton || !hydrated
+
+  const picksByGroup: Record<string, typeof picks> = {}
+  for (const group of groups) {
+    picksByGroup[group.id] = picks.filter((pick) => {
+      const match = matchesById[pick.matchId]
+      return match?.groupId === group.id
+    })
+  }
+
+  if (showSkeleton) {
     return (
       <section aria-labelledby="community-picks-heading">
         <h2 id="community-picks-heading" className="mb-4 text-lg font-semibold">

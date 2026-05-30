@@ -2,19 +2,23 @@
 
 import { useOptimistic, useTransition } from "react"
 import type { MatchPrediction } from "@/src/types/predictions"
-import { submitMatchPrediction } from "@/src/actions/predictions"
+import {
+  clearMatchPrediction,
+  submitMatchPrediction,
+} from "@/src/actions/predictions"
 import { usePredictionsStore } from "@/src/stores/predictions.store"
 
-type OptimisticPredictionAction = {
-  matchId: string
-  homeScore: number
-  awayScore: number
-}
+type OptimisticPredictionAction =
+  | { type: "set"; matchId: string; homeScore: number; awayScore: number }
+  | { type: "clear"; matchId: string }
 
 function applyOptimisticPrediction(
   state: Record<string, MatchPrediction | null>,
   action: OptimisticPredictionAction,
 ): Record<string, MatchPrediction | null> {
+  if (action.type === "clear") {
+    return { ...state, [action.matchId]: null }
+  }
   return {
     ...state,
     [action.matchId]: {
@@ -41,14 +45,22 @@ export function useOptimisticPredictions() {
     awayScore: number,
   ) {
     startTransition(async () => {
-      setOptimistic({ matchId, homeScore, awayScore })
+      setOptimistic({ type: "set", matchId, homeScore, awayScore })
       await submitMatchPrediction({ matchId, homeScore, awayScore })
+    })
+  }
+
+  function clearScore(matchId: string) {
+    startTransition(async () => {
+      setOptimistic({ type: "clear", matchId })
+      await clearMatchPrediction(matchId)
     })
   }
 
   return {
     matchPredictions: optimistic,
     submitScore,
+    clearScore,
     isPending,
   }
 }

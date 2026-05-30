@@ -33,7 +33,7 @@ export function usePredictionsOptimistic(): PredictionsOptimisticValue {
 }
 
 export function useOptimisticMatchPrediction(matchId: string) {
-  const { matchPredictions, submitScore, isPending } =
+  const { matchPredictions, submitScore, clearScore, isPending } =
     usePredictionsOptimistic()
 
   const prediction = matchPredictions[matchId]
@@ -42,10 +42,11 @@ export function useOptimisticMatchPrediction(matchId: string) {
   return {
     prediction,
     hasPrediction,
-    displayHome: prediction?.homeScore ?? 0,
-    displayAway: prediction?.awayScore ?? 0,
+    displayHome: prediction?.homeScore ?? null,
+    displayAway: prediction?.awayScore ?? null,
     submitScore: (homeScore: number, awayScore: number) =>
       submitScore(matchId, homeScore, awayScore),
+    clearScore: () => clearScore(matchId),
     isPending,
   }
 }

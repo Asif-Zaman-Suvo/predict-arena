@@ -6,7 +6,7 @@
 
 ## 1. Objective
 
-Build a single-user FIFA World Cup 2026 prediction web app. The user predicts **group-stage match scores** on `/fixtures`; standings, best-third ranking, and Round of 32 slots derive automatically. Knockout winners are picked on `/brackets`. A mock leaderboard compares the user's group-stage predictions against seeded results.
+Build a single-user FIFA World Cup 2026 prediction web app. The user predicts **group-stage match scores** on `/fixtures`; standings, best-third ranking, and Round of 32 slots derive automatically. Knockout winners are picked on `/brackets`.
 
 **User:** A football fan filling out a prediction bracket before the tournament.
 
@@ -35,8 +35,8 @@ Build a single-user FIFA World Cup 2026 prediction web app. The user predicts **
 - **Actions** — `src/actions/predictions.ts`, `src/actions/user.ts` (mock delay + Zustand writes).
 - **`useOptimistic`** — score updates via `PredictionsOptimisticProvider`.
 - **`useActionState`** — onboarding + profile name edit.
-- **Suspense + `use()`** — fixtures/groups/leaderboard data gates (`src/data/loaders.ts`).
-- **Derived state** — `useTournamentDerived()` / `useLeaderboardEntries()` (no `tournament.store`).
+- **Suspense + `use()`** — fixtures/groups data gates (`src/data/loaders.ts`).
+- **Derived state** — `useTournamentDerived()` (no `tournament.store`).
 - **Hydration** — `usePersistHydrated()` via `useSyncExternalStore` on Zustand persist.
 
 **Rendering:**
@@ -70,7 +70,6 @@ predict-arena/
 │   │   └── [groupId]/page.tsx
 │   ├── brackets/page.tsx       # /brackets — knockout bracket
 │   ├── bracket/page.tsx        # redirect → /brackets
-│   ├── leaderboard/page.tsx
 │   ├── community/page.tsx
 │   └── profile/page.tsx
 │
@@ -82,21 +81,19 @@ predict-arena/
 │   │   ├── matches/            # MatchCard, PredictionMatchCard
 │   │   ├── predictions/        # ScoreInput, PredictionSummary
 │   │   ├── bracket/
-│   │   ├── leaderboard/
 │   │   ├── community/
 │   │   ├── profile/
-│   │   ├── layout/
+│   │   ├── layout/               # OnboardingGate, GuardedLink, …
 │   │   ├── providers/          # AppProviders, PredictionsOptimisticProvider
 │   │   └── ui/
 │   ├── data/                   # JSON + loaders.ts
-│   ├── hooks/                  # useOptimisticPredictions, useOptimisticLeaderboard
+│   ├── hooks/                  # useOptimisticPredictions
 │   ├── lib/                    # tournament, scoring, bracket, match-display, r32-slots
 │   ├── stores/
 │   │   ├── predictions.store.ts
 │   │   ├── user.store.ts
-│   │   ├── tournament.selectors.ts   # derived standings (replaces tournament.store)
-│   │   ├── leaderboard.selectors.ts
-│   │   └── persist-hydration.ts      # usePersistHydrated / useHydrated
+│   │   ├── tournament.selectors.ts
+│   │   └── persist-hydration.ts
 │   └── types/
 │
 └── docs/
@@ -105,7 +102,7 @@ predict-arena/
     └── TASKS.md
 ```
 
-**Deferred (not in repo):** `/predict/*`, `/schedule`, `/teams`, `/teams/[teamId]`.
+**Deferred (not in repo):** `/predict/*`, `/schedule`, `/teams`, `/teams/[teamId]`, `/leaderboard` (removed).
 
 ---
 
@@ -119,11 +116,12 @@ predict-arena/
 | `/groups/[groupId]` | Group detail | Standings + read-only match cards with scores |
 | `/brackets` | Knockout bracket | R32 derived from groups; click to pick winners when stage complete |
 | `/bracket` | Redirect | → `/brackets` |
-| `/leaderboard` | Leaderboard | 20 mock users + live user row |
 | `/community` | Community | Pick %, activity feed, top predictors |
-| `/profile` | Profile | Stats, edit name, prediction summary |
+| `/profile` | Profile | Stats (incl. score vs mock results), edit name, prediction summary |
 
-**Navigation (SiteHeader):** Home · Fixtures · Groups · Brackets · Leaderboard · Community · Profile
+**Navigation (SiteHeader):** Home · Fixtures · Groups · Brackets · Community · Profile
+
+**Onboarding:** Display name required before leaving `/` (`OnboardingGate` + `GuardedLink`).
 
 **Constraints:**
 - R32 bracket slots populate only when **all 72** group matches have explicit predictions (`null` ≠ predicted).
@@ -149,9 +147,9 @@ predict-arena/
 ### Other JSON
 | File | Purpose |
 |---|---|
-| `results.json` | Mock final scores for **group** matches (leaderboard scoring) |
-| `leaderboard.json` | 20 seeded users |
-| `community-picks.json` | Home/draw/away % per match |
+| `results.json` | Mock final scores for **group** matches (profile score via `scoring.ts`) |
+| `leaderboard.json` | 20 seeded mock users for **community** (Top Predictors, activity avatars) — no `/leaderboard` route |
+| Community picks | Computed at runtime from seeded users + your predictions (`lib/community-predictions.ts`) |
 | `community-feed.json` | Mock activity items |
 | `sample-predictions.json` | Reference only; **not** used to seed the live store |
 
@@ -197,9 +195,6 @@ No `tournament.store` and no `useEffect` sync between stores.
 - `computeTournamentDerived(matchPredictions)`
 - `useTournamentDerived()` — reads **optimistic** predictions from `PredictionsOptimisticProvider`
 
-### `leaderboard.selectors.ts`
-- `computeLeaderboardEntries()` + `useOptimisticLeaderboard()`
-
 ### Hydration
 - `useHydrated()` / `usePersistHydrated()` — both stores must rehydrate before showing persisted UI
 
@@ -215,8 +210,8 @@ No `tournament.store` and no `useEffect` sync between stores.
 | `GroupGrid` / `GroupCard` | Overview standings |
 | `GroupStandingsTable` | Full table; motion `layout` on rows |
 | `KnockoutBracket` | 6 rounds; editable when `isGroupStageComplete` |
-| `LeaderboardTable` | Optimistic rows; ref callback scroll to user |
-| `OnboardingDialog` | `useActionState(completeOnboardingAction)` |
+| `OnboardingDialog` | `useActionState(completeOnboardingAction)`; non-dismissible until name set |
+| `OnboardingGate` | Redirect + block routes until onboarding complete |
 | `ProfileNameForm` | `useActionState(updateDisplayNameAction)` |
 
 **Display helpers:** `src/lib/match-display.ts` — `formatKickoffTime`, `formatMatchMeta`, `formatVenueLine`.
@@ -226,7 +221,7 @@ No `tournament.store` and no `useEffect` sync between stores.
 ## 10. User Flows (implemented)
 
 ### First visit
-`/` → onboarding (display name) → dashboard with 0/72 progress → CTA to `/fixtures`.
+`/` → onboarding (display name, required) → dashboard with 0/72 progress → CTA to `/fixtures`.
 
 ### Group predictions
 `/fixtures` → tab Group A–L → change scores → optimistic UI → persist → header pill updates.
@@ -235,8 +230,8 @@ No `tournament.store` and no `useEffect` sync between stores.
 `/groups` shows derived standings (placeholders until group complete).  
 `/brackets` locked until 72/72; then R32 auto-filled; click teams for knockout rounds.
 
-### Leaderboard
-`/leaderboard` — user score from `scoring.ts` vs `results.json` (group stage).
+### Profile score
+`/profile` — **Your Score** from `computeUserScore()` vs `results.json` (group stage only).
 
 ---
 
@@ -259,8 +254,8 @@ Unchanged from original spec: navy/gold tokens in `globals.css`, Geist fonts, ma
 
 ## 13. Scoring (`src/lib/scoring.ts`)
 
-Mock leaderboard uses group-stage comparison vs `results.json`:
-- Exact score: 3 pts · Correct result: 1 pt (documented in original spec; knockout scoring limited in mock data)
+Used on **profile** only (no leaderboard page):
+- Exact score: 3 pts · Correct result: 1 pt (knockout not scored in mock data)
 
 ---
 
@@ -284,13 +279,14 @@ Mock leaderboard uses group-stage comparison vs `results.json`:
 - [x] Standings derive from predictions; per-group complete when 6/6 predicted
 - [x] R32 unlocks after 72/72; derived from standings + best 8 thirds
 - [x] Knockout winner picks on `/brackets`
-- [x] Leaderboard with mock users + user row
 - [x] Community + profile surfaces
+- [x] Onboarding gates all routes until display name set
 - [x] Predictions persist (`localStorage`)
 - [x] Functional at 320px; bracket horizontal scroll on mobile
 - [x] `npm run build` and `tsc` pass
 - [ ] `/schedule` and `/teams` (deferred)
 - [ ] Separate `/predict` hub (replaced by `/fixtures`)
+- [x] `/leaderboard` removed (2026-05-30)
 
 ---
 
@@ -304,4 +300,5 @@ Mock leaderboard uses group-stage comparison vs `results.json`:
 | `tournament.store` | **`tournament.selectors.ts`** |
 | Sample predictions seed store | **Empty `null`** predictions until user input |
 | Read-only `/bracket` | **Editable** knockout when group stage complete |
+| `/leaderboard` page | **Removed** — score on profile; `leaderboard.json` for community mock users only |
 | `/teams`, `/schedule` | Not built |

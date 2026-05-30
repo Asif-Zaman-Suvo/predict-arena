@@ -5,7 +5,6 @@ import {
   CalendarDays,
   LayoutGrid,
   Trophy,
-  Medal,
   Users,
 } from "lucide-react"
 import { Progress } from "@/src/components/ui/progress"
@@ -157,12 +156,6 @@ const QUICK_LINKS = [
     icon: Trophy,
   },
   {
-    href: "/leaderboard",
-    label: "Leaderboard",
-    description: "See how you rank against others",
-    icon: Medal,
-  },
-  {
     href: "/community",
     label: "Community",
     description: "Browse picks and activity feed",
@@ -177,7 +170,7 @@ function QuickAccessGrid() {
         Quick Access
       </h2>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         {QUICK_LINKS.map(({ href, label, description, icon: Icon }) => (
           <GuardedLink
             key={href}

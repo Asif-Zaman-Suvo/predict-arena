@@ -1,14 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import {
-  communityFeed,
-  leaderboard,
-  matches,
-  samplePredictions,
-  teams,
-} from "@/src/data"
+import { communityFeed, leaderboard, matches, teams } from "@/src/data"
+import { getPredictionForUser } from "@/src/lib/community-predictions"
 import { buildTeamMap } from "@/src/lib/teams"
+import type { MatchPrediction } from "@/src/types/predictions"
 import { ActivityItem } from "@/src/components/community/ActivityItem"
 import { Button } from "@/src/components/ui/button"
 
@@ -22,6 +18,11 @@ const sortedFeed = [...communityFeed].sort(
   (a, b) =>
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
 )
+
+const predictionCache = new Map<
+  string,
+  Record<string, MatchPrediction | null>
+>()
 
 const INITIAL_COUNT = 15
 
@@ -79,11 +80,14 @@ export function ActivityFeed({ skeleton = false }: ActivityFeedProps) {
               match?.awayTeamId != null
                 ? teamsById[match.awayTeamId]
                 : undefined
-            const prediction = item.matchId
-              ? (samplePredictions.matchPredictions[
-                  item.matchId as keyof typeof samplePredictions.matchPredictions
-                ] ?? null)
-              : null
+            const prediction =
+              item.matchId != null
+                ? getPredictionForUser(
+                    item.userId,
+                    item.matchId,
+                    predictionCache,
+                  )
+                : null
 
             return (
               <ActivityItem

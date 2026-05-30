@@ -1,6 +1,7 @@
 "use client"
 
 import { leaderboard } from "@/src/data"
+import { useCommunityPicks } from "@/src/hooks/use-community-picks"
 import { useHydrated } from "@/src/stores/hydration"
 import { CommunityPicksSection } from "@/src/components/community/CommunityPicksSection"
 import { ActivityFeed } from "@/src/components/community/ActivityFeed"
@@ -10,6 +11,7 @@ const topFive = leaderboard.slice(0, 5)
 
 export function CommunityPageContent() {
   const hydrated = useHydrated()
+  const { predictorCount } = useCommunityPicks()
 
   return (
     <div className="space-y-10">
@@ -18,7 +20,9 @@ export function CommunityPageContent() {
           Community Predictions
         </h1>
         <p className="mt-1 text-sm text-text-muted">
-          See what 20 predictors are calling for World Cup 2026
+          {hydrated
+            ? `Live split from ${predictorCount} predictors (includes your picks when set)`
+            : "Loading community predictions…"}
         </p>
       </header>
 

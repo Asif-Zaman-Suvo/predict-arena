@@ -1,4 +1,3 @@
-import Link from "next/link"
 import type { LeaderboardEntry } from "@/src/types/leaderboard"
 import { getDiceBearAvatarUrl } from "@/src/lib/avatars"
 import { cn } from "@/src/lib/utils"
@@ -93,13 +92,6 @@ export function TopPredictors({ entries, skeleton = false }: TopPredictorsProps)
           </div>
         ))}
       </div>
-
-      <Link
-        href="/leaderboard"
-        className="mt-4 inline-flex text-sm font-medium text-gold transition-colors hover:text-foreground"
-      >
-        View full leaderboard →
-      </Link>
     </section>
   )
 }

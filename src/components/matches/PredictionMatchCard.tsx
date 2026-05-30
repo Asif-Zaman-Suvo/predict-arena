@@ -31,6 +31,7 @@ export function PredictionMatchCard({
     displayHome,
     displayAway,
     submitScore,
+    clearScore,
     isPending,
   } = useOptimisticMatchPrediction(match.id)
 
@@ -40,10 +41,7 @@ export function PredictionMatchCard({
     <article
       className={cn(
         "rounded-lg border border-border bg-surface px-4 py-5",
-        hasPrediction &&
-          prediction &&
-          (prediction.homeScore !== 0 || prediction.awayScore !== 0) &&
-          "border-gold/30",
+        hasPrediction && "border-gold/30",
         className,
       )}
       aria-busy={isPending}
@@ -87,7 +85,8 @@ export function PredictionMatchCard({
           awayTeamName={awayTeam.name}
           homeScore={displayHome}
           awayScore={displayAway}
-          onChange={submitScore}
+          onCommit={submitScore}
+          onClear={clearScore}
           pending={isPending}
           className="justify-center"
         />

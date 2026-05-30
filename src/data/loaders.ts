@@ -1,8 +1,7 @@
-import { groups, matches, teams, venues, leaderboard } from "@/src/data"
+import { groups, matches, teams, venues } from "@/src/data"
 import { buildTeamMap } from "@/src/lib/teams"
 import { simulatePersistDelay } from "@/src/lib/delay"
 import type { Group, Match, Team, Venue } from "@/src/types/tournament"
-import type { LeaderboardEntry } from "@/src/types/leaderboard"
 
 export interface FixturesBundle {
   groups: Group[]
@@ -16,10 +15,6 @@ export interface FixturesBundle {
 export interface GroupsBundle {
   groups: Group[]
   teamsById: Record<string, Team>
-}
-
-export interface LeaderboardBundle {
-  leaderboard: LeaderboardEntry[]
 }
 
 function buildMatchesByGroup(allMatches: Match[]): Record<string, Match[]> {
@@ -52,14 +47,8 @@ async function loadGroupsBundleImpl(): Promise<GroupsBundle> {
   return { groups, teamsById: buildTeamMap(teams) }
 }
 
-async function loadLeaderboardBundleImpl(): Promise<LeaderboardBundle> {
-  await simulatePersistDelay()
-  return { leaderboard }
-}
-
 let fixturesPromise: Promise<FixturesBundle> | null = null
 let groupsPromise: Promise<GroupsBundle> | null = null
-let leaderboardPromise: Promise<LeaderboardBundle> | null = null
 
 export function loadFixturesBundle(): Promise<FixturesBundle> {
   fixturesPromise ??= loadFixturesBundleImpl()
@@ -69,9 +58,4 @@ export function loadFixturesBundle(): Promise<FixturesBundle> {
 export function loadGroupsBundle(): Promise<GroupsBundle> {
   groupsPromise ??= loadGroupsBundleImpl()
   return groupsPromise
-}
-
-export function loadLeaderboardBundle(): Promise<LeaderboardBundle> {
-  leaderboardPromise ??= loadLeaderboardBundleImpl()
-  return leaderboardPromise
 }

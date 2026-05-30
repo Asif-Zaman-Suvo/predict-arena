@@ -2,12 +2,7 @@
 
 import { useState } from "react"
 import { Pencil } from "lucide-react"
-import { leaderboard } from "@/src/data"
 import { getDiceBearAvatarUrl } from "@/src/lib/avatars"
-import {
-  buildRankedLeaderboard,
-  CURRENT_USER_ID,
-} from "@/src/lib/leaderboard"
 import { GROUP_MATCH_COUNT, countCompletedGroupPredictions } from "@/src/lib/tournament"
 import { computeUserScore } from "@/src/lib/scoring"
 import { usePredictionsOptimistic } from "@/src/components/providers/PredictionsOptimisticProvider"
@@ -60,26 +55,11 @@ function computeProfileStats(
 
   const score = computeUserScore({ matchPredictions })
 
-  const ranked = buildRankedLeaderboard(leaderboard, {
-    id: CURRENT_USER_ID,
-    displayName: displayName.trim() || "You",
-    avatarSeed,
-    totalPoints: score.totalPoints,
-    correctScores: score.correctScores,
-    correctResults: score.correctResults,
-    groupStagePoints: score.groupStagePoints,
-    knockoutPoints: score.knockoutPoints,
-  })
-
-  const userRank =
-    ranked.find((entry) => entry.isCurrentUser)?.rank ?? ranked.length
-
   return {
     groupCompleted,
     r32Ready,
     qualifiedThirds,
     score: score.totalPoints,
-    rank: userRank,
   }
 }
 
@@ -160,7 +140,7 @@ export function ProfilePageContent() {
         <h2 id="stats-heading" className="mb-4 text-lg font-semibold">
           Stats
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <StatCard
             label="Group Predictions"
             value={
@@ -183,11 +163,6 @@ export function ProfilePageContent() {
           <StatCard
             label="Your Score"
             value={stats ? String(stats.score) : "—"}
-            skeleton={!hydrated}
-          />
-          <StatCard
-            label="Rank"
-            value={stats ? `#${stats.rank}` : "—"}
             skeleton={!hydrated}
           />
         </div>
