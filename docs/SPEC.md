@@ -1,21 +1,20 @@
 # Spec: FIFA World Cup 2026 Predictor — Frontend UI
 
-**Status:** Draft · **Date:** 2026-05-30 · **Author:** Frontend Team
+**Status:** Implemented (aligned with codebase as of 2026-05-30) · **Author:** Frontend Team
 
 ---
 
 ## 1. Objective
 
-Build a single-user FIFA World Cup 2026 prediction web app. The user predicts match scores across all tournament stages, sees a live bracket reflecting their predictions, and can compare their standing against a mock leaderboard of seeded users.
+Build a single-user FIFA World Cup 2026 prediction web app. The user predicts **group-stage match scores** on `/fixtures`; standings, best-third ranking, and Round of 32 slots derive automatically. Knockout winners are picked on `/brackets`. A mock leaderboard compares the user's group-stage predictions against seeded results.
 
-**User:** A football fan who wants to fill out a prediction bracket before and during the tournament.
+**User:** A football fan filling out a prediction bracket before the tournament.
 
 **Success looks like:**
-- User can predict every group stage match score.
-- Predicted standings automatically derive group advancement.
-- User can complete a knockout bracket based on their predicted group results.
-- The full bracket is always visible and reflects predictions.
-- The experience is fast, visually polished, and usable on mobile.
+- User can predict all **72** group-stage match scores in one place (`/fixtures`).
+- Standings and R32 matchups update from predictions (no manual qualifier picking).
+- User can pick knockout winners when the group stage is complete.
+- Fast, polished, mobile-usable UI with persisted predictions.
 
 ---
 
@@ -23,19 +22,26 @@ Build a single-user FIFA World Cup 2026 prediction web app. The user predicts ma
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Framework | Next.js 16.2.6 (App Router) | Already in project |
-| Language | TypeScript 5, strict mode | Already in project |
-| Styling | Tailwind CSS 4 | Already in project, uses `@import "tailwindcss"` |
-| Component library | shadcn/ui | Needs install |
-| State management | Zustand 5 | Needs install |
-| Animation | Framer Motion 12 | Needs install |
-| Icons | Lucide React | Bundled with shadcn/ui |
-| Mock data | Static JSON in `src/data/` | No API, no fetch |
+| Framework | Next.js 16.2.6 (App Router) | Server + Client Components |
+| Language | TypeScript 5, strict mode | |
+| Styling | Tailwind CSS 4 | `@import "tailwindcss"` + shadcn CSS variables |
+| Components | shadcn/ui | `src/components/ui/` |
+| State | Zustand 5 + persist | `predictions.store`, `user.store` |
+| Animation | Framer Motion 12 | PageWrapper, bracket, standings |
+| Icons | Lucide React | |
+| Data | Static JSON in `src/data/` | No `fetch()`, no API |
 
-**Rendering model:**
-- Pages and layouts default to **Server Components** (Next.js 16 default).
-- Any component using Zustand, `useState`, `useEffect`, event handlers, or Framer Motion requires `'use client'`.
-- Zustand stores are client-only. They hydrate from `localStorage` on mount.
+**React 19 patterns (implemented):**
+- **Actions** — `src/actions/predictions.ts`, `src/actions/user.ts` (mock delay + Zustand writes).
+- **`useOptimistic`** — score updates via `PredictionsOptimisticProvider`.
+- **`useActionState`** — onboarding + profile name edit.
+- **Suspense + `use()`** — fixtures/groups/leaderboard data gates (`src/data/loaders.ts`).
+- **Derived state** — `useTournamentDerived()` / `useLeaderboardEntries()` (no `tournament.store`).
+- **Hydration** — `usePersistHydrated()` via `useSyncExternalStore` on Zustand persist.
+
+**Rendering:**
+- Pages default to Server Components where possible.
+- Client: Zustand, events, Framer Motion, optimistic hooks, all prediction UI.
 
 ---
 
@@ -43,7 +49,7 @@ Build a single-user FIFA World Cup 2026 prediction web app. The user predicts ma
 
 ```
 Install:     npm install
-Dev server:  npm run dev          → http://localhost:3000
+Dev:         npm run dev          → http://localhost:3000
 Build:       npm run build
 Type check:  npx tsc --noEmit
 Lint:        npm run lint
@@ -51,559 +57,251 @@ Lint:        npm run lint
 
 ---
 
-## 4. Project Structure
+## 4. Project Structure (implemented)
 
 ```
 predict-arena/
-├── app/                          # Next.js App Router
-│   ├── layout.tsx                # Root layout (Server Component)
-│   ├── page.tsx                  # / → Dashboard
-│   ├── globals.css               # Tailwind v4 entry + design tokens
+├── app/
+│   ├── layout.tsx              # Root layout + AppProviders
+│   ├── page.tsx                # / — Dashboard
+│   ├── fixtures/page.tsx       # /fixtures — group score entry (main)
 │   ├── groups/
-│   │   ├── page.tsx              # /groups → All groups overview
-│   │   └── [groupId]/
-│   │       └── page.tsx          # /groups/A → Single group detail
-│   ├── predict/
-│   │   ├── layout.tsx            # Predict sub-layout (progress indicator)
-│   │   ├── page.tsx              # /predict → Prediction hub entry
-│   │   ├── groups/
-│   │   │   └── page.tsx          # /predict/groups → Group stage predictions
-│   │   └── knockout/
-│   │       └── page.tsx          # /predict/knockout → Bracket predictions
-│   ├── bracket/
-│   │   └── page.tsx              # /bracket → Full bracket viewer (read-only)
-│   ├── schedule/
-│   │   └── page.tsx              # /schedule → Full match schedule
-│   ├── teams/
-│   │   ├── page.tsx              # /teams → All 48 teams grid
-│   │   └── [teamId]/
-│   │       └── page.tsx          # /teams/usa → Team profile
-│   └── leaderboard/
-│       └── page.tsx              # /leaderboard → Mock rankings
+│   │   ├── page.tsx
+│   │   └── [groupId]/page.tsx
+│   ├── brackets/page.tsx       # /brackets — knockout bracket
+│   ├── bracket/page.tsx        # redirect → /brackets
+│   ├── leaderboard/page.tsx
+│   ├── community/page.tsx
+│   └── profile/page.tsx
 │
 ├── src/
+│   ├── actions/                # React 19 form actions
 │   ├── components/
-│   │   ├── layout/
-│   │   │   ├── SiteHeader.tsx    # Sticky nav, mobile menu
-│   │   │   ├── SiteFooter.tsx    # Footer
-│   │   │   └── MobileNav.tsx     # Sheet-based mobile navigation
+│   │   ├── fixtures/           # FixturesPageContent, DataGate, skeleton
 │   │   ├── groups/
-│   │   │   ├── GroupCard.tsx     # Group standings summary card
-│   │   │   ├── GroupStandingsTable.tsx  # Full points table
-│   │   │   └── GroupGrid.tsx     # 12-group grid layout
-│   │   ├── matches/
-│   │   │   ├── MatchCard.tsx     # Match display (teams, date, venue)
-│   │   │   ├── MatchList.tsx     # Scrollable list of matches
-│   │   │   └── MatchDaySection.tsx  # Grouped by date
-│   │   ├── predictions/
-│   │   │   ├── ScoreInput.tsx    # Numeric score input for one match
-│   │   │   ├── PredictionCard.tsx   # MatchCard + ScoreInput combined
-│   │   │   ├── PredictionProgress.tsx  # % complete progress bar
-│   │   │   ├── GroupPredictionsForm.tsx  # All matches for one group
-│   │   │   └── PredictionSummary.tsx    # Summary of all predictions
+│   │   ├── matches/            # MatchCard, PredictionMatchCard
+│   │   ├── predictions/        # ScoreInput, PredictionSummary
 │   │   ├── bracket/
-│   │   │   ├── KnockoutBracket.tsx  # Full bracket visualization
-│   │   │   ├── BracketRound.tsx     # One round column
-│   │   │   ├── BracketMatch.tsx     # Single match slot in bracket
-│   │   │   └── BracketConnector.tsx # SVG connector lines
-│   │   ├── teams/
-│   │   │   ├── TeamCard.tsx      # Flag + name + group card
-│   │   │   ├── TeamFlag.tsx      # Country flag display (emoji fallback)
-│   │   │   └── TeamGrid.tsx      # Responsive grid of TeamCards
 │   │   ├── leaderboard/
-│   │   │   ├── LeaderboardTable.tsx   # Full rankings table
-│   │   │   └── LeaderboardRow.tsx     # Single rank entry
-│   │   └── ui/                   # shadcn/ui primitives (generated)
-│   │       └── ...               # button, card, badge, sheet, etc.
-│   │
+│   │   ├── community/
+│   │   ├── profile/
+│   │   ├── layout/
+│   │   ├── providers/          # AppProviders, PredictionsOptimisticProvider
+│   │   └── ui/
+│   ├── data/                   # JSON + loaders.ts
+│   ├── hooks/                  # useOptimisticPredictions, useOptimisticLeaderboard
+│   ├── lib/                    # tournament, scoring, bracket, match-display, r32-slots
 │   ├── stores/
-│   │   ├── predictions.store.ts  # User's match predictions
-│   │   ├── user.store.ts         # User profile (name, avatar seed)
-│   │   └── tournament.store.ts   # Derived tournament state (standings)
-│   │
-│   ├── data/                     # Static mock JSON (no fetch)
-│   │   ├── teams.json            # 48 teams
-│   │   ├── groups.json           # 12 groups with team IDs
-│   │   ├── matches.json          # All scheduled matches
-│   │   ├── schedule.json         # Match dates + venues
-│   │   └── leaderboard.json      # 20 seeded mock users
-│   │
-│   ├── lib/
-│   │   ├── tournament.ts         # Pure fns: derive standings, advance teams
-│   │   ├── scoring.ts            # Prediction scoring rules
-│   │   └── utils.ts              # cn(), formatDate(), formatScore()
-│   │
+│   │   ├── predictions.store.ts
+│   │   ├── user.store.ts
+│   │   ├── tournament.selectors.ts   # derived standings (replaces tournament.store)
+│   │   ├── leaderboard.selectors.ts
+│   │   └── persist-hydration.ts      # usePersistHydrated / useHydrated
 │   └── types/
-│       ├── tournament.ts         # Team, Group, Match, Standing types
-│       ├── predictions.ts        # UserPrediction, PredictionState types
-│       └── leaderboard.ts        # LeaderboardEntry type
-│
-├── public/
-│   └── flags/                    # SVG/PNG flag assets (optional)
 │
 └── docs/
-    └── SPEC.md                   # This file
+    ├── SPEC.md
+    ├── PLAN.md
+    └── TASKS.md
 ```
+
+**Deferred (not in repo):** `/predict/*`, `/schedule`, `/teams`, `/teams/[teamId]`.
 
 ---
 
-## 5. Route Map
+## 5. Route Map (implemented)
 
-| Route | Page | Rendering | Description |
-|---|---|---|---|
-| `/` | Dashboard | Server | Tournament overview, countdown, user prediction progress |
-| `/groups` | Groups overview | Server | 12-group grid with mini standings |
-| `/groups/[groupId]` | Group detail | Server | Full standings + match list for one group |
-| `/predict` | Prediction hub | Server | Entry card with progress bars per stage |
-| `/predict/groups` | Group predictions | **Client** | Score inputs for all 48 group matches |
-| `/predict/knockout` | Knockout bracket | **Client** | Interactive bracket, advances from group predictions |
-| `/bracket` | Bracket viewer | **Client** | Read-only bracket reflecting user's predictions |
-| `/schedule` | Schedule | Server | All matches by date with predicted scores overlay |
-| `/teams` | Teams grid | Server | All 48 teams, filterable by group/confederation |
-| `/teams/[teamId]` | Team profile | Server | Flag, group, players (mock), predicted results |
-| `/leaderboard` | Leaderboard | Server | Mock rankings, user's position highlighted |
+| Route | Page | Description |
+|---|---|---|
+| `/` | Dashboard | Countdown, progress, quick links |
+| `/fixtures` | **Fixtures** | **Only** place to enter group scores (tabs A–L, 6 matches each) |
+| `/groups` | Groups overview | Read-only standings grid from predictions |
+| `/groups/[groupId]` | Group detail | Standings + read-only match cards with scores |
+| `/brackets` | Knockout bracket | R32 derived from groups; click to pick winners when stage complete |
+| `/bracket` | Redirect | → `/brackets` |
+| `/leaderboard` | Leaderboard | 20 mock users + live user row |
+| `/community` | Community | Pick %, activity feed, top predictors |
+| `/profile` | Profile | Stats, edit name, prediction summary |
 
-**Route constraints:**
-- `/predict/knockout` is disabled (shows locked state) until the user has predicted all group stage matches.
-- Dynamic segments `[groupId]` and `[teamId]` use `generateStaticParams` (no ISR needed since data is static JSON).
+**Navigation (SiteHeader):** Home · Fixtures · Groups · Brackets · Leaderboard · Community · Profile
 
----
-
-## 6. Mock Data Shape
-
-### `data/teams.json`
-
-```
-Team {
-  id: string              // "usa", "brazil", "france"
-  name: string            // "United States"
-  shortName: string       // "USA"
-  confederation: string   // "CONCACAF" | "UEFA" | "CONMEBOL" | "CAF" | "AFC" | "OFC"
-  flagEmoji: string       // "🇺🇸"
-  flagCode: string        // "us" (ISO 3166-1 alpha-2 for flag CDN)
-  fifaRanking: number
-  groupId: string         // "A"
-}
-```
-
-### `data/groups.json`
-
-```
-Group {
-  id: string              // "A" through "L"
-  name: string            // "Group A"
-  teamIds: string[]       // exactly 4 team IDs
-}
-```
-
-### `data/matches.json`
-
-```
-Match {
-  id: string              // "m001"
-  stage: "group" | "r32" | "r16" | "qf" | "sf" | "3rd" | "final"
-  groupId: string | null  // null for knockout
-  homeTeamId: string | null   // null for unresolved knockout slots
-  awayTeamId: string | null
-  date: string            // ISO 8601 "2026-06-11T18:00:00-05:00"
-  venueId: string
-  bracketSlot: string | null  // "r32-m1" for bracket positioning
-}
-```
-
-### `data/schedule.json`
-
-```
-Venue {
-  id: string
-  name: string            // "MetLife Stadium"
-  city: string            // "East Rutherford"
-  country: string         // "USA" | "Canada" | "Mexico"
-  capacity: number
-  timezone: string        // "America/New_York"
-}
-```
-
-### `data/leaderboard.json`
-
-```
-LeaderboardEntry {
-  id: string
-  displayName: string
-  avatarSeed: string      // used with DiceBear for deterministic avatars
-  totalPoints: number
-  correctScores: number   // exact score prediction
-  correctResults: number  // correct outcome (W/D/L)
-  groupStagePoints: number
-  knockoutPoints: number
-  rank: number
-}
-```
+**Constraints:**
+- R32 bracket slots populate only when **all 72** group matches have explicit predictions (`null` ≠ predicted).
+- Per-group standings compute only when **all 6** matches in that group are predicted.
+- `generateStaticParams` on `/groups/[groupId]` for A–L.
 
 ---
 
-## 7. Zustand Stores
+## 6. Data Model
+
+### Teams & groups
+- **48 teams**, **12 groups** (A–L), **4 teams** per group (`teams.json`, `groups.json`).
+
+### Matches (`matches.json`)
+- **72** group-stage matches (6 per group).
+- **32** knockout slot records (R32 → final) with `bracketSlot`; team IDs often `null` until derived/filled.
+- **104** total match records.
+- Kickoff: ISO 8601 `date` with offset; display via `formatKickoffTime(date, venue.timezone)` in venue local time (24h).
+
+### Venues (`schedule.json`)
+- **18** FIFA-style venue names (USA/Canada/Mexico), including Houston (`nrg`) and Seattle (`lumen`).
+
+### Other JSON
+| File | Purpose |
+|---|---|
+| `results.json` | Mock final scores for **group** matches (leaderboard scoring) |
+| `leaderboard.json` | 20 seeded users |
+| `community-picks.json` | Home/draw/away % per match |
+| `community-feed.json` | Mock activity items |
+| `sample-predictions.json` | Reference only; **not** used to seed the live store |
+
+### Predictions store shape
+```ts
+matchPredictions: Record<matchId, { homeScore, awayScore } | null>  // null = not predicted
+knockoutPredictions: Record<matchId, teamId | null>
+```
+Persist key `pa:predictions` (v2). Empty predictions use `null`, not `0-0`, until the user sets a score.
+
+---
+
+## 7. Architecture: Predictions → Derived State
+
+```
+/fixtures (score entry, optimistic UI + actions)
+        ↓
+predictions.store (persisted)
+        ↓
+computeTournamentDerived() / useTournamentDerived()
+  - groupStandings, groupComplete, isGroupStageComplete
+  - bestThirdPlaceRanking, r32Matchups (FIFA-style slot map in r32-slots.ts)
+        ↓
+/groups (read-only)     /brackets (derived R32 + knockout picks)
+```
+
+No `tournament.store` and no `useEffect` sync between stores.
+
+---
+
+## 8. Zustand Stores
 
 ### `predictions.store.ts`
-
-```
-State:
-  matchPredictions: Record<matchId, { homeScore: number; awayScore: number } | null>
-  knockoutPredictions: Record<bracketSlot, teamId | null>
-
-Actions:
-  setPrediction(matchId, homeScore, awayScore): void
-  clearPrediction(matchId): void
-  setKnockoutAdvance(bracketSlot, teamId): void
-  resetAll(): void
-
-Derived (computed inline):
-  completedGroupMatches: number   // count of non-null predictions for group matches
-  totalGroupMatches: number       // 48
-  isGroupStageComplete: boolean
-  completedKnockoutSlots: number
-  totalKnockoutSlots: number
-
-Persistence: localStorage key "pa:predictions" via Zustand persist middleware
-```
+- `setPrediction`, `clearPrediction`, `setKnockoutPrediction`
+- Clears `knockoutPredictions` when group stage is incomplete
+- Persist: `pa:predictions`
 
 ### `user.store.ts`
+- `displayName`, `avatarSeed`, `hasOnboarded`
+- Persist: `pa:user`
 
-```
-State:
-  displayName: string         // default "Predictor"
-  avatarSeed: string          // random UUID on first visit
-  hasOnboarded: boolean
+### `tournament.selectors.ts` (not persisted)
+- `computeTournamentDerived(matchPredictions)`
+- `useTournamentDerived()` — reads **optimistic** predictions from `PredictionsOptimisticProvider`
 
-Actions:
-  setDisplayName(name): void
-  setAvatarSeed(seed): void
-  completeOnboarding(): void
+### `leaderboard.selectors.ts`
+- `computeLeaderboardEntries()` + `useOptimisticLeaderboard()`
 
-Persistence: localStorage key "pa:user"
-```
-
-### `tournament.store.ts`
-
-```
-State (derived, not persisted):
-  groupStandings: Record<groupId, Standing[]>
-
-Standing {
-  teamId: string
-  played: number
-  won: number
-  drawn: number
-  lost: number
-  goalsFor: number
-  goalsAgainst: number
-  goalDifference: number
-  points: number
-  advancementStatus: "advances" | "maybe" | "eliminated" | "tbd"
-}
-
-Actions:
-  recomputeStandings(matchPredictions): void
-
-Note: This store is derived entirely from predictions.store.
-      It recomputes whenever predictions change.
-      Pure computation lives in src/lib/tournament.ts.
-```
+### Hydration
+- `useHydrated()` / `usePersistHydrated()` — both stores must rehydrate before showing persisted UI
 
 ---
 
-## 8. Component Inventory
+## 9. Key Components
 
-### Layout Components
-
-| Component | Rendering | Props | Behavior |
-|---|---|---|---|
-| `SiteHeader` | Client | — | Sticky. Mobile hamburger → `MobileNav` sheet. Active link highlight. Prediction progress indicator in nav. |
-| `MobileNav` | Client | `isOpen, onClose` | shadcn `Sheet` from left. Full route list. Closes on navigate. |
-| `SiteFooter` | Server | — | Static. Tournament credits, GitHub link. |
-
-### Group Components
-
-| Component | Rendering | Props | Behavior |
-|---|---|---|---|
-| `GroupCard` | Server | `group, teams, standings` | Shows group letter, 4 teams with mini points. Links to group detail. |
-| `GroupGrid` | Server | `groups[]` | 12-card responsive grid. `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4` |
-| `GroupStandingsTable` | Client | `standings, teams` | Full points table. Highlights advancement positions. Animated row reordering via Framer Motion `layout` prop. |
-
-### Match Components
-
-| Component | Rendering | Props | Behavior |
-|---|---|---|---|
-| `MatchCard` | Server | `match, homeTeam, awayTeam, prediction?` | Shows flags, team names, date/venue, optional score overlay. |
-| `MatchDaySection` | Server | `date, matches[]` | Groups matches under a formatted date heading. |
-| `MatchList` | Server | `matches[], ...` | Wraps `MatchDaySection` groups. |
-
-### Prediction Components
-
-| Component | Rendering | Props | Behavior |
-|---|---|---|---|
-| `ScoreInput` | **Client** | `matchId, value, onChange` | Two number inputs (0–99). Increment/decrement buttons. Accessible with `aria-label`. |
-| `PredictionCard` | **Client** | `match, homeTeam, awayTeam` | `MatchCard` + `ScoreInput` inline. Reads/writes predictions store. |
-| `GroupPredictionsForm` | **Client** | `groupId` | All 6 matches for one group. Scrollable. Group standings update live as scores change. |
-| `PredictionProgress` | **Client** | — | Reads store. Two progress bars: group stage, knockout. |
-| `PredictionSummary` | **Client** | — | Card grid of all predicted results. Print-friendly. |
-
-### Bracket Components
-
-| Component | Rendering | Props | Behavior |
-|---|---|---|---|
-| `KnockoutBracket` | **Client** | `matches[], predictions` | Full bracket tree. Horizontal scroll on mobile. Framer Motion `AnimatePresence` for team name transitions. |
-| `BracketRound` | **Client** | `round, matches[]` | Single round column (R32, R16, QF, SF, Final). |
-| `BracketMatch` | **Client** | `match, isEditable` | Match slot. Editable in `/predict/knockout`, read-only in `/bracket`. |
-| `BracketConnector` | Server | `top, bottom` | SVG lines connecting match slots. |
-
-### Team Components
-
-| Component | Rendering | Props | Behavior |
-|---|---|---|---|
-| `TeamCard` | Server | `team` | Flag emoji, name, confederation badge, FIFA ranking. Links to team profile. |
-| `TeamFlag` | Server | `team, size` | Renders flag emoji at scale. `aria-label={team.name}`. |
-| `TeamGrid` | Server | `teams[]` | `grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6` |
-
-### Leaderboard Components
-
-| Component | Rendering | Props | Behavior |
-|---|---|---|---|
-| `LeaderboardTable` | **Client** | `entries, currentUserId` | Table with rank, avatar, name, points breakdown. Current user row highlighted. Top 3 have gold/silver/bronze accents. |
-| `LeaderboardRow` | **Client** | `entry, isCurrentUser` | Single row. Framer Motion entrance animation. |
-
----
-
-## 9. Design System
-
-### Color Tokens (defined in `globals.css`)
-
-```
---color-pitch:      #0a1628   (deep navy — primary background)
---color-surface:    #111d33   (card backgrounds)
---color-surface-2:  #1a2d4a   (elevated surfaces)
---color-border:     #1e3352   (borders)
---color-text:       #f0f4f8   (primary text)
---color-text-muted: #6b8aaa   (secondary text)
---color-accent:     #e4b524   (gold — highlights, winners, CTAs)
---color-success:    #22c55e
---color-danger:     #ef4444
---color-info:       #3b82f6
-```
-
-Rationale: Deep navy + gold evokes a trophy/night-match aesthetic aligned with World Cup 2026 brand. No purple gradients. No generic "SaaS blue."
-
-### Typography Scale
-
-```
-font-display: "Geist", sans-serif   (headings — already in Next.js default)
-font-body:    "Geist", sans-serif
-
-heading-xl:  2.25rem / 700 / tight   (page titles)
-heading-lg:  1.5rem  / 600 / tight   (section titles)
-heading-md:  1.125rem / 600 / normal (card titles)
-body:        1rem / 400 / relaxed    (default)
-body-sm:     0.875rem / 400 / normal (secondary)
-label:       0.75rem / 500 / wide    (badges, labels)
-```
-
-### Spacing Scale
-
-Tailwind default 4px base. Use only scale values: `1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24`.
-
-### Border Radius
-
-```
-sm:   4px    (inputs, badges)
-md:   8px    (cards — default)
-lg:   12px   (panels, modals)
-full: 9999px (pills, avatars)
-```
-
-### Motion Principles (Framer Motion)
-
-```
-Duration:    150ms (micro), 250ms (standard), 400ms (page enter)
-Easing:      ease-out for entrances, ease-in for exits
-Principles:
-  - Bracket team name transitions: fade + slide (200ms)
-  - Standings reorder: layout animation (300ms)
-  - Leaderboard row entrance: staggered fade-in (50ms delay per row)
-  - Page transitions: fade only (250ms) — no slide, too slow on mobile
-  - Score input changes: no animation (immediate feedback required)
-```
-
----
-
-## 10. User Flows
-
-### Flow 1: First Visit
-
-```
-/ → Onboarding modal (enter display name) → dismiss → Dashboard
-```
-
-- Name saved to `user.store`.
-- Prediction progress shows 0/48 group predictions.
-- CTA: "Start Predicting" → `/predict/groups`
-
-### Flow 2: Group Stage Prediction
-
-```
-/predict/groups → GroupTab(A-L) → PredictionCard × 6 → auto-save
-```
-
-- Predictions store updates on each `ScoreInput` blur.
-- Group standings sidebar updates live (derived from store).
-- Progress bar in header updates.
-- When all 48 matches predicted → knockout tab unlocks.
-
-### Flow 3: Knockout Bracket Prediction
-
-```
-/predict/knockout → BracketMatch (pre-filled from group results) → edit → save
-```
-
-- R32 slots pre-populate from predicted group standings.
-- User can override TBD slots by selecting from candidate teams.
-- Advancing teams propagate forward automatically.
-- Final prediction sets "Predicted Champion."
-
-### Flow 4: Bracket Review
-
-```
-/bracket → KnockoutBracket (read-only) → hover match for score detail
-```
-
-- Full visual bracket. Print button (CSS `@media print`).
-
-### Flow 5: Leaderboard Check
-
-```
-/leaderboard → LeaderboardTable → user row auto-scrolled into view
-```
-
-- User's mock score is computed by `src/lib/scoring.ts` against seeded "real results" in the mock data.
-- No real backend. Score is deterministic.
-
-### Flow 6: Team Deep-Dive
-
-```
-/teams → filter by group or confederation → /teams/[teamId]
-```
-
-- Team page shows: flag, FIFA ranking, group assignment, all group matches (with user's predicted scores), predicted advancement status.
-
----
-
-## 11. Responsiveness Requirements
-
-| Breakpoint | Key Layout Changes |
+| Component | Role |
 |---|---|
-| 320px (xs) | Single column everything. Bracket horizontal scroll. Score inputs full-width. |
-| 640px (sm) | Group grid → 2 cols. Teams → 3 cols. |
-| 768px (md) | `/predict/groups` → side-by-side standings + matches. |
-| 1024px (lg) | Group grid → 3 cols. Bracket full-width (no horizontal scroll). |
-| 1440px (xl) | Group grid → 4 cols. Max content width: 1280px centered. |
+| `PredictionMatchCard` | Horizontal row: teams · **kickoff time** · teams; metadata line; `ScoreInput` below |
+| `ScoreInput` | ± buttons, 0–99; `aria-busy` when action pending |
+| `MatchCard` | Read-only; same layout as prediction card + score or score under time |
+| `GroupGrid` / `GroupCard` | Overview standings |
+| `GroupStandingsTable` | Full table; motion `layout` on rows |
+| `KnockoutBracket` | 6 rounds; editable when `isGroupStageComplete` |
+| `LeaderboardTable` | Optimistic rows; ref callback scroll to user |
+| `OnboardingDialog` | `useActionState(completeOnboardingAction)` |
+| `ProfileNameForm` | `useActionState(updateDisplayNameAction)` |
+
+**Display helpers:** `src/lib/match-display.ts` — `formatKickoffTime`, `formatMatchMeta`, `formatVenueLine`.
 
 ---
 
-## 12. Accessibility Requirements (WCAG 2.1 AA)
+## 10. User Flows (implemented)
 
-- All interactive elements keyboard-accessible. Tab order is logical.
-- `ScoreInput` has `aria-label="Home score for {homeTeam.name} vs {awayTeam.name}"`.
-- `BracketMatch` slots use `role="group"` with `aria-label` of the matchup.
-- Flag emojis wrapped in `<span role="img" aria-label="{team.name} flag">`.
-- Color alone never conveys state — advancement uses both color + icon + text.
-- Focus ring visible on all interactive elements (Tailwind `focus-visible:ring-2`).
-- Modal (onboarding) traps focus and returns it on close.
+### First visit
+`/` → onboarding (display name) → dashboard with 0/72 progress → CTA to `/fixtures`.
 
----
+### Group predictions
+`/fixtures` → tab Group A–L → change scores → optimistic UI → persist → header pill updates.
 
-## 13. Loading / Error / Empty States
+### Standings & bracket
+`/groups` shows derived standings (placeholders until group complete).  
+`/brackets` locked until 72/72; then R32 auto-filled; click teams for knockout rounds.
 
-Every data-dependent component needs all three:
-
-| Component | Loading | Empty | Error |
-|---|---|---|---|
-| `GroupGrid` | 12 skeleton cards | — | "Could not load groups" |
-| `KnockoutBracket` | Skeleton bracket shape | "Complete group predictions to unlock" | — |
-| `LeaderboardTable` | Row skeletons | — | "Leaderboard unavailable" |
-| `TeamGrid` | Card skeletons | "No teams match your filter" | — |
-| `PredictionCard` | — | — | Score resets to 0 on parse error |
+### Leaderboard
+`/leaderboard` — user score from `scoring.ts` vs `results.json` (group stage).
 
 ---
 
-## 14. Scoring Rules (for Mock Leaderboard)
+## 11. Design System
 
-Documented here so UI can display breakdowns accurately:
-
-```
-Correct exact score:     3 points
-Correct result only:     1 point (W/D/L)
-Correct group qualifier: 2 points (right team advancing)
-Correct knockout winner: 5 points (per round, multiplied by round)
-```
-
-`src/lib/scoring.ts` computes user score against `data/results.json` (mock "final results").
+Unchanged from original spec: navy/gold tokens in `globals.css`, Geist fonts, max width `1280px`, Framer Motion principles with `useReducedMotion` in `PageWrapper`.
 
 ---
 
-## 15. Dependencies to Install
+## 12. Accessibility (WCAG 2.1 AA target)
 
-```
-npm install zustand framer-motion
-npx shadcn@latest init
-npx shadcn@latest add button card badge sheet progress tabs
-npx shadcn@latest add table input separator tooltip dialog
-```
-
-**shadcn/ui note:** Init will ask for Tailwind CSS — choose the v4 config path since this project already uses Tailwind v4.
+- Keyboard-accessible score controls and bracket selection
+- `ScoreInput` / `BracketMatch` aria labels per spec patterns
+- `TeamFlag` → `role="img"`
+- Advancement: color + icon + text
+- Onboarding dialog focus + `useActionState` error display
+- Target: Lighthouse a11y ≥ 90 on `/` and `/community` (verified in polish pass)
 
 ---
 
-## 16. Boundaries
+## 13. Scoring (`src/lib/scoring.ts`)
+
+Mock leaderboard uses group-stage comparison vs `results.json`:
+- Exact score: 3 pts · Correct result: 1 pt (documented in original spec; knockout scoring limited in mock data)
+
+---
+
+## 14. Boundaries
 
 **Always:**
-- `'use client'` on any component using Zustand, `useState`, `useEffect`, or Framer Motion.
-- All data reads from static JSON imports — no `fetch()`.
-- TypeScript strict mode. No `any`. No `as` casts without a comment justifying it.
-- Spacing values from the Tailwind scale only. No arbitrary pixel values.
-- Every interactive element keyboard-accessible.
-
-**Ask first:**
-- Adding a new npm dependency.
-- Adding a new route not in the route map above.
-- Changing mock data shape (downstream type impact).
-- Changing the scoring algorithm.
+- `'use client'` where required
+- Static JSON only — no `fetch()`
+- TypeScript strict
+- `useHydrated()` before persisted store reads in UI
 
 **Never:**
-- `fetch()` or API calls of any kind (no backend exists).
-- Designing database schemas or API contracts.
-- Inline styles or arbitrary Tailwind values (e.g. `w-[347px]` without strong justification).
-- Committing `node_modules` or build artifacts.
-- Skipping loading/error/empty states.
+- Backend / API
+- Seeding live predictions from `sample-predictions.json` on first visit (empty `null` state by design)
 
 ---
 
-## 17. Success Criteria
+## 15. Success Criteria (implementation)
 
-- [ ] User can predict scores for all 48 group stage matches.
-- [ ] Group standings update live as scores are entered.
-- [ ] Knockout bracket unlocks only after all group matches are predicted.
-- [ ] R32 bracket pre-populates from predicted group standings.
-- [ ] Bracket is viewable read-only at `/bracket`.
-- [ ] Leaderboard shows 20 mock users with user's position visible.
-- [ ] All 48 teams viewable with group context.
-- [ ] Full schedule browsable by date.
-- [ ] Predictions persist across page refreshes (localStorage).
-- [ ] App is fully functional at 320px viewport.
-- [ ] Lighthouse accessibility score ≥ 90.
-- [ ] No TypeScript errors (`npx tsc --noEmit` passes).
-- [ ] No console errors in dev or production build.
+- [x] Predict all **72** group-stage matches on `/fixtures`
+- [x] Standings derive from predictions; per-group complete when 6/6 predicted
+- [x] R32 unlocks after 72/72; derived from standings + best 8 thirds
+- [x] Knockout winner picks on `/brackets`
+- [x] Leaderboard with mock users + user row
+- [x] Community + profile surfaces
+- [x] Predictions persist (`localStorage`)
+- [x] Functional at 320px; bracket horizontal scroll on mobile
+- [x] `npm run build` and `tsc` pass
+- [ ] `/schedule` and `/teams` (deferred)
+- [ ] Separate `/predict` hub (replaced by `/fixtures`)
 
 ---
 
-## 18. Open Questions
+## 16. Changelog vs original draft spec
 
-None currently. Assumptions in Section 0 should be confirmed before implementation begins.
+| Original | Implemented |
+|---|---|
+| 48 group matches | **72** (6 per group, FIFA 2026 format) |
+| `/predict/groups` | **`/fixtures`** |
+| `/predict/knockout` | Knockout on **`/brackets`** |
+| `tournament.store` | **`tournament.selectors.ts`** |
+| Sample predictions seed store | **Empty `null`** predictions until user input |
+| Read-only `/bracket` | **Editable** knockout when group stage complete |
+| `/teams`, `/schedule` | Not built |
