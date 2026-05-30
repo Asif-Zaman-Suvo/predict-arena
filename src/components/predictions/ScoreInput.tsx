@@ -76,7 +76,7 @@ export function ScoreInput({
   return (
     <div
       className={cn(
-        "flex items-center justify-end gap-2",
+        "flex items-center gap-2",
         pending && "opacity-70",
         className,
       )}

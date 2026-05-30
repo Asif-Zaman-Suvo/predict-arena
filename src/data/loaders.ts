@@ -25,9 +25,11 @@ export interface LeaderboardBundle {
 function buildMatchesByGroup(allMatches: Match[]): Record<string, Match[]> {
   const map: Record<string, Match[]> = {}
   for (const group of groups) {
-    map[group.id] = allMatches.filter(
-      (m) => m.groupId === group.id && m.stage === "group",
-    )
+    map[group.id] = allMatches
+      .filter((m) => m.groupId === group.id && m.stage === "group")
+      .sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      )
   }
   return map
 }

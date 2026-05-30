@@ -86,7 +86,7 @@ export function FixturesPageContent({ bundle }: FixturesPageContentProps) {
             <p className="text-sm text-text-muted">
               {group.name} — 6 matches
             </p>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="flex flex-col gap-3">
               {!hydrated
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <MatchCardSkeleton key={i} />

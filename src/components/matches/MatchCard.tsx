@@ -1,7 +1,11 @@
 import type { Match, Team, Venue } from "@/src/types/tournament"
 import type { MatchPrediction } from "@/src/types/predictions"
 import { TeamFlag } from "@/src/components/teams/TeamFlag"
-import { cn, formatDate, formatScore } from "@/src/lib/utils"
+import {
+  formatKickoffTime,
+  formatMatchMeta,
+} from "@/src/lib/match-display"
+import { cn, formatScore } from "@/src/lib/utils"
 
 interface MatchCardProps {
   match: Match
@@ -20,40 +24,49 @@ export function MatchCard({
   prediction,
   className,
 }: MatchCardProps) {
+  const kickoff = formatKickoffTime(match.date, venue.timezone)
+
   return (
     <article
       className={cn(
-        "relative rounded-lg border border-border bg-surface p-4",
+        "rounded-lg border border-border bg-surface px-4 py-5",
         className,
       )}
     >
-      <div className="absolute right-4 top-4">
-        {prediction ? (
-          <span className="text-sm font-semibold text-gold">
-            {formatScore(prediction.homeScore, prediction.awayScore)}
+      <div className="flex min-w-0 items-center justify-center gap-2 sm:gap-4">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <span className="truncate text-right text-sm font-medium">
+            {homeTeam.name}
           </span>
-        ) : (
-          <span className="text-sm text-text-muted" aria-label="No prediction">
-            —
-          </span>
-        )}
-      </div>
-
-      <div className="space-y-3 pr-16">
-        <div className="flex items-center gap-2">
           <TeamFlag
             emoji={homeTeam.flagEmoji}
             name={homeTeam.name}
             size="sm"
           />
-          <span className="truncate text-sm font-medium">{homeTeam.name}</span>
         </div>
 
-        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
-          vs
-        </p>
+        <div className="flex shrink-0 flex-col items-center px-1">
+          <time
+            dateTime={match.date}
+            className="text-xl font-bold tabular-nums tracking-tight"
+          >
+            {kickoff}
+          </time>
+          {prediction ? (
+            <span className="mt-0.5 text-sm font-semibold text-gold">
+              {formatScore(prediction.homeScore, prediction.awayScore)}
+            </span>
+          ) : (
+            <span
+              className="mt-0.5 text-sm text-text-muted"
+              aria-label="No prediction"
+            >
+              —
+            </span>
+          )}
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <TeamFlag
             emoji={awayTeam.flagEmoji}
             name={awayTeam.name}
@@ -63,8 +76,8 @@ export function MatchCard({
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-text-muted">
-        {formatDate(match.date)} · {venue.name}
+      <p className="mt-2 text-center text-xs text-text-muted">
+        {formatMatchMeta(match, venue)}
       </p>
     </article>
   )
