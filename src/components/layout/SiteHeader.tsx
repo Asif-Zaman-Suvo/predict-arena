@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { GuardedLink } from "./GuardedLink"
 import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
 import { cn } from "@/src/lib/utils"
@@ -69,14 +69,14 @@ export function SiteHeader() {
       <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur supports-backdrop-filter:bg-surface/80">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
           {/* Logo */}
-          <Link
+          <GuardedLink
             href="/"
             className="mr-2 flex shrink-0 items-center gap-2 font-semibold text-gold"
             aria-label="FIFA WC 2026 Predictor — home"
           >
             <span className="text-lg leading-none">⚽</span>
             <span className="hidden text-sm sm:block">WC 2026</span>
-          </Link>
+          </GuardedLink>
 
           {/* Desktop nav */}
           <nav
@@ -88,7 +88,7 @@ export function SiteHeader() {
                 href === "/" ? pathname === "/" : pathname.startsWith(href)
 
               return (
-                <Link
+                <GuardedLink
                   key={href}
                   href={href}
                   className={cn(
@@ -101,7 +101,7 @@ export function SiteHeader() {
                   aria-current={isActive ? "page" : undefined}
                 >
                   {label}
-                </Link>
+                </GuardedLink>
               )
             })}
           </nav>

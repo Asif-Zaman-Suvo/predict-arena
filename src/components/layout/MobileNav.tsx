@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import Link from "next/link"
+import { GuardedLink } from "./GuardedLink"
 import { usePathname } from "next/navigation"
 import {
   Sheet,
@@ -51,7 +51,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
 
               return (
                 <li key={href}>
-                  <Link
+                  <GuardedLink
                     href={href}
                     className={cn(
                       "flex min-h-11 items-center gap-3 px-6 py-3 text-sm transition-colors",
@@ -62,7 +62,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                     aria-current={isActive ? "page" : undefined}
                   >
                     {label}
-                  </Link>
+                  </GuardedLink>
                 </li>
               )
             })}

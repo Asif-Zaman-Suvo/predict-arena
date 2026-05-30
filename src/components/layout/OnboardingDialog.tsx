@@ -1,6 +1,9 @@
 "use client"
 
 import { useActionState, useState } from "react"
+import { useUserStore } from "@/src/stores/user.store"
+import { useHydrated } from "@/src/stores/hydration"
+import { canAccessApp } from "@/src/lib/user-access"
 import {
   Dialog,
   DialogContent,
@@ -12,28 +15,29 @@ import {
 import { Input } from "@/src/components/ui/input"
 import { Button } from "@/src/components/ui/button"
 import { completeOnboardingAction } from "@/src/actions/user"
-import { useUserStore } from "@/src/stores/user.store"
-import { useHydrated } from "@/src/stores/hydration"
 
 export function OnboardingDialog() {
   const hydrated = useHydrated()
   const hasOnboarded = useUserStore((s) => s.hasOnboarded)
-  const [dismissed, setDismissed] = useState(false)
+  const displayName = useUserStore((s) => s.displayName)
   const [name, setName] = useState("")
   const [state, formAction, isPending] = useActionState(
     completeOnboardingAction,
     null,
   )
 
-  const open = hydrated && !hasOnboarded && !dismissed
-
-  function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) setDismissed(true)
-  }
+  const open =
+    hydrated && !canAccessApp({ hasOnboarded, displayName })
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="border-border bg-surface sm:max-w-md">
+    <Dialog open={open}>
+      <DialogContent
+        className="border-border bg-surface sm:max-w-md"
+        hideClose
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Welcome to the Arena</DialogTitle>
           <DialogDescription>

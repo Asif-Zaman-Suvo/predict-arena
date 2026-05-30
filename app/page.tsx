@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { GuardedLink } from "@/src/components/layout/GuardedLink"
 import {
   CalendarDays,
   LayoutGrid,
@@ -9,7 +9,6 @@ import {
   Users,
 } from "lucide-react"
 import { Progress } from "@/src/components/ui/progress"
-import { OnboardingDialog } from "@/src/components/layout/OnboardingDialog"
 import { usePredictionsOptimistic } from "@/src/components/providers/PredictionsOptimisticProvider"
 import { useTournamentDerived } from "@/src/stores/tournament.selectors"
 import { useHydrated } from "@/src/stores/hydration"
@@ -125,14 +124,14 @@ function PredictionProgressCard() {
           </p>
         )}
 
-        <Link
+        <GuardedLink
           href="/fixtures"
           className="inline-flex min-h-11 items-center rounded-md bg-gold px-4 text-sm font-medium text-pitch transition-colors hover:bg-gold/90"
         >
           {completed === GROUP_MATCH_COUNT
             ? "Review fixtures"
             : "Predict fixtures"}
-        </Link>
+        </GuardedLink>
       </div>
     </section>
   )
@@ -180,7 +179,7 @@ function QuickAccessGrid() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
         {QUICK_LINKS.map(({ href, label, description, icon: Icon }) => (
-          <Link
+          <GuardedLink
             key={href}
             href={href}
             className={cn(
@@ -196,7 +195,7 @@ function QuickAccessGrid() {
                 {description}
               </p>
             </div>
-          </Link>
+          </GuardedLink>
         ))}
       </div>
     </section>
@@ -212,7 +211,6 @@ export default function Home() {
         <QuickAccessGrid />
       </div>
 
-      <OnboardingDialog />
     </>
   )
 }
