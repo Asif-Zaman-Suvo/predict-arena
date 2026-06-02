@@ -6,6 +6,7 @@ import { teams } from "@/src/data"
 import { buildTeamMap } from "@/src/lib/teams"
 import { r32MatchupsToRecord } from "@/src/lib/r32-slots"
 import { GROUP_MATCH_COUNT } from "@/src/lib/tournament"
+import { submitKnockoutPrediction } from "@/src/actions/knockout-predictions"
 import { usePredictionsStore } from "@/src/stores/predictions.store"
 import { useTournamentDerived } from "@/src/stores/tournament.selectors"
 import { useUserStore } from "@/src/stores/user.store"
@@ -39,7 +40,9 @@ export function BracketPageContent() {
 
   function handleSelectWinner(matchId: string, teamId: string) {
     const current = knockoutPredictions[matchId]
-    setKnockoutPrediction(matchId, current === teamId ? null : teamId)
+    const next = current === teamId ? null : teamId
+    setKnockoutPrediction(matchId, next)
+    void submitKnockoutPrediction(matchId, next)
   }
 
   return (

@@ -11,6 +11,7 @@ import { useUserStore } from "@/src/stores/user.store"
 import { useHydrated } from "@/src/stores/hydration"
 import { PredictionSummary } from "@/src/components/predictions/PredictionSummary"
 import { ProfileNameForm } from "@/src/components/profile/ProfileNameForm"
+import { ResetPredictionsButton } from "@/src/components/profile/ResetPredictionsButton"
 import { Button } from "@/src/components/ui/button"
 import { cn } from "@/src/lib/utils"
 
@@ -126,14 +127,17 @@ export function ProfilePageContent() {
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="print:hidden"
-          onClick={() => window.print()}
-        >
-          Print
-        </Button>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <ResetPredictionsButton />
+          <Button
+            type="button"
+            variant="outline"
+            className="print:hidden"
+            onClick={() => window.print()}
+          >
+            Print
+          </Button>
+        </div>
       </header>
 
       <section aria-labelledby="stats-heading">

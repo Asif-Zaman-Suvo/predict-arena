@@ -2,7 +2,7 @@
 
 import { groups, matches, teams } from "@/src/data"
 import { buildTeamMap } from "@/src/lib/teams"
-import { useCommunityPicks } from "@/src/hooks/use-community-picks"
+import { useCommunityData } from "@/src/hooks/use-community-data"
 import { CommunityPickBar } from "@/src/components/community/CommunityPickBar"
 import {
   Tabs,
@@ -21,12 +21,12 @@ interface CommunityPicksSectionProps {
 export function CommunityPicksSection({
   skeleton = false,
 }: CommunityPicksSectionProps) {
-  const { picks, hydrated } = useCommunityPicks()
-  const showSkeleton = skeleton || !hydrated
+  const { communityPicks, loading } = useCommunityData()
+  const showSkeleton = skeleton || loading
 
-  const picksByGroup: Record<string, typeof picks> = {}
+  const picksByGroup: Record<string, typeof communityPicks> = {}
   for (const group of groups) {
-    picksByGroup[group.id] = picks.filter((pick) => {
+    picksByGroup[group.id] = communityPicks.filter((pick) => {
       const match = matchesById[pick.matchId]
       return match?.groupId === group.id
     })

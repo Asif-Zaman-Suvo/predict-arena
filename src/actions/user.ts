@@ -1,6 +1,8 @@
 "use client"
 
 import { simulatePersistDelay } from "@/src/lib/delay"
+import { supabase } from "@/src/lib/supabase/client"
+import { ensureUserJoined } from "@/src/lib/supabase/predictions"
 import { useUserStore } from "@/src/stores/user.store"
 
 export type UserActionResult =
@@ -22,6 +24,22 @@ export async function completeOnboardingAction(
   const store = useUserStore.getState()
   store.setDisplayName(displayName)
   store.completeOnboarding()
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (session?.user) {
+    const { error: profileError } = await supabase
+      .from("users")
+      .update({ display_name: displayName })
+      .eq("id", session.user.id)
+
+    if (profileError) {
+      console.error("Failed to sync display name:", profileError)
+    }
+
+    await ensureUserJoined(session.user.id)
+  }
 
   return { ok: true }
 }

@@ -1,14 +1,13 @@
-import samplePredictionsRaw from "@/src/data/sample-predictions.json"
-import { matches } from "@/src/data"
+import { matches, samplePredictions } from "@/src/data"
 import type { CommunityPickPercentage } from "@/src/types/community"
 import type { MatchPrediction } from "@/src/types/predictions"
 
-const samplePredictions = samplePredictionsRaw.matchPredictions as Record<
+const matchPredictions = samplePredictions.matchPredictions as Record<
   string,
   MatchPrediction
 >
 
-const GROUP_MATCH_IDS = matches
+export const GROUP_MATCH_IDS = matches
   .filter((m) => m.stage === "group")
   .map((m) => m.id)
 
@@ -34,7 +33,7 @@ function outcomeFromPrediction(pred: MatchPrediction): MatchOutcome {
 
 /**
  * Deterministic per-user variation from the reference sample bracket so each
- * leaderboard user has distinct picks without a 20×72 static JSON file.
+ * community seeded user has distinct picks without a 20×72 static JSON file.
  */
 export function buildSeededUserPredictions(
   userId: string,
@@ -42,7 +41,7 @@ export function buildSeededUserPredictions(
   const predictions: Record<string, MatchPrediction | null> = {}
 
   for (const matchId of GROUP_MATCH_IDS) {
-    const base = samplePredictions[matchId]
+    const base = matchPredictions[matchId]
     if (!base) {
       predictions[matchId] = null
       continue

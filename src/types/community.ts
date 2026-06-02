@@ -1,6 +1,12 @@
 /** Union alias — use for switch/narrowing in application code */
 export type ActivityType = "prediction" | "comment" | "join"
 
+export interface CommunityUser {
+  readonly id: string
+  readonly displayName: string
+  readonly avatarSeed: string
+}
+
 export interface CommunityPickPercentage {
   readonly matchId: string
   readonly homePct: number

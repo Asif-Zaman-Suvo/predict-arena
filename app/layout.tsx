@@ -5,6 +5,7 @@ import { SiteHeader } from "@/src/components/layout/SiteHeader"
 import { SiteFooter } from "@/src/components/layout/SiteFooter"
 import { PageWrapper } from "@/src/components/layout/PageWrapper"
 import { AppProviders } from "@/src/components/providers/AppProviders"
+import { AuthProvider } from "@/src/contexts/AuthContext"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,15 +37,17 @@ export default function RootLayout({
         The body stretches full height and stacks header → main → footer.
       */}
       <body className="flex min-h-full flex-col overflow-x-hidden bg-pitch text-foreground">
-        <SiteHeader />
+        <AuthProvider>
+          <SiteHeader />
 
-        <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 py-6">
-          <AppProviders>
-            <PageWrapper>{children}</PageWrapper>
-          </AppProviders>
-        </main>
+          <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 py-6">
+            <AppProviders>
+              <PageWrapper>{children}</PageWrapper>
+            </AppProviders>
+          </main>
 
-        <SiteFooter />
+          <SiteFooter />
+        </AuthProvider>
       </body>
     </html>
   )

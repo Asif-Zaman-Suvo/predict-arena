@@ -13,6 +13,7 @@ import {
   countCompletedGroupPredictions,
 } from "@/src/lib/tournament"
 import { MobileNav } from "./MobileNav"
+import { AuthHeaderButton } from "./AuthHeaderButton"
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -111,6 +112,7 @@ export function SiteHeader() {
           {/* User name + prediction progress pills */}
           <UserPill />
           <PredictionPill />
+          <AuthHeaderButton />
 
           {/* Hamburger — visible only ≤ md */}
           <button

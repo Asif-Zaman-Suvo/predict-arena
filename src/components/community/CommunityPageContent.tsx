@@ -1,34 +1,47 @@
 "use client"
 
-import { leaderboard } from "@/src/data"
-import { useCommunityPicks } from "@/src/hooks/use-community-picks"
-import { useHydrated } from "@/src/stores/hydration"
+import {
+  CommunityDataProvider,
+  useCommunityData,
+} from "@/src/contexts/CommunityDataContext"
 import { CommunityPicksSection } from "@/src/components/community/CommunityPicksSection"
 import { ActivityFeed } from "@/src/components/community/ActivityFeed"
-import { TopPredictors } from "@/src/components/community/TopPredictors"
+import { JoinCommunityButton } from "@/src/components/community/JoinCommunityButton"
+import { CommunitySignInBanner } from "@/src/components/community/CommunitySignInBanner"
 
-const topFive = leaderboard.slice(0, 5)
-
-export function CommunityPageContent() {
-  const hydrated = useHydrated()
-  const { predictorCount } = useCommunityPicks()
+function CommunityPageInner() {
+  const { joinedUsers, loading } = useCommunityData()
+  const predictorCount = joinedUsers.length
 
   return (
     <div className="space-y-10">
-      <header>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
         <h1 className="text-2xl font-bold tracking-tight">
           Community Predictions
         </h1>
         <p className="mt-1 text-sm text-text-muted">
-          {hydrated
-            ? `Live split from ${predictorCount} predictors (includes your picks when set)`
-            : "Loading community predictions…"}
+          {loading
+            ? "Loading community predictions…"
+            : predictorCount > 0
+            ? `Live split from ${predictorCount} community member${predictorCount !== 1 ? "s" : ""} · updates as you predict`
+            : "Be the first to join and make predictions!"}
         </p>
+        </div>
+        <JoinCommunityButton />
       </header>
 
-      <CommunityPicksSection skeleton={!hydrated} />
-      <ActivityFeed skeleton={!hydrated} />
-      <TopPredictors entries={topFive} skeleton={!hydrated} />
+      <CommunitySignInBanner />
+      <CommunityPicksSection skeleton={loading} />
+      <ActivityFeed skeleton={loading} />
     </div>
+  )
+}
+
+export function CommunityPageContent() {
+  return (
+    <CommunityDataProvider>
+      <CommunityPageInner />
+    </CommunityDataProvider>
   )
 }

@@ -230,7 +230,64 @@ function resolveFixedSlot(
   return standings[index]?.teamId ?? null
 }
 
-function resolveThirdSlot(
+interface ThirdSlotNeed {
+  slotKey: string
+  candidateGroups: string[]
+}
+
+function thirdSlotKey(matchId: string, side: "home" | "away"): string {
+  return `${matchId}:${side}`
+}
+
+function collectThirdSlotNeeds(): ThirdSlotNeed[] {
+  const needs: ThirdSlotNeed[] = []
+  for (const { matchId, home, away } of R32_SLOT_DEFINITIONS) {
+    if (home.type === "third") {
+      needs.push({
+        slotKey: thirdSlotKey(matchId, "home"),
+        candidateGroups: home.candidateGroups,
+      })
+    }
+    if (away.type === "third") {
+      needs.push({
+        slotKey: thirdSlotKey(matchId, "away"),
+        candidateGroups: away.candidateGroups,
+      })
+    }
+  }
+  return needs
+}
+
+/** Greedy fallback when backtracking finds no valid mapping. */
+function assignThirdPlaceGreedy(
+  rankedThirds: BestThirdPlaceEntry[],
+): Map<string, string> {
+  const assignedThirdIds = new Set<string>()
+  const result = new Map<string, string>()
+
+  for (const { matchId, home, away } of R32_SLOT_DEFINITIONS) {
+    if (home.type === "third") {
+      const teamId = pickThirdForSlot(
+        home.candidateGroups,
+        rankedThirds,
+        assignedThirdIds,
+      )
+      if (teamId) result.set(thirdSlotKey(matchId, "home"), teamId)
+    }
+    if (away.type === "third") {
+      const teamId = pickThirdForSlot(
+        away.candidateGroups,
+        rankedThirds,
+        assignedThirdIds,
+      )
+      if (teamId) result.set(thirdSlotKey(matchId, "away"), teamId)
+    }
+  }
+
+  return result
+}
+
+function pickThirdForSlot(
   candidateGroups: string[],
   rankedThirds: BestThirdPlaceEntry[],
   assignedThirdIds: Set<string>,
@@ -245,43 +302,61 @@ function resolveThirdSlot(
   return null
 }
 
-function resolveSlotTeam(
-  ref: R32SlotTeamRef,
-  allGroupStandings: Record<string, Standing[]>,
+/**
+ * Assign 8 qualifying third-place teams to 8 R32 slots (each slot only allows
+ * certain groups). Greedy first-fit can leave late slots empty (e.g. England's
+ * opponent); backtracking finds a valid full assignment when one exists.
+ */
+function assignThirdPlaceTeams(
   rankedThirds: BestThirdPlaceEntry[],
-  assignedThirdIds: Set<string>,
-): string | null {
-  if (ref.type === "third") {
-    return resolveThirdSlot(ref.candidateGroups, rankedThirds, assignedThirdIds)
+): Map<string, string> {
+  const qualifiers = rankedThirds.filter((entry) => entry.qualifies)
+  const needs = collectThirdSlotNeeds()
+  const assignment = new Map<string, string>()
+
+  function backtrack(needIndex: number): boolean {
+    if (needIndex >= needs.length) return true
+
+    const { slotKey, candidateGroups } = needs[needIndex]
+    const usedTeamIds = new Set(assignment.values())
+
+    for (const entry of qualifiers) {
+      if (usedTeamIds.has(entry.teamId)) continue
+      if (!candidateGroups.includes(entry.groupId)) continue
+
+      assignment.set(slotKey, entry.teamId)
+      if (backtrack(needIndex + 1)) return true
+      assignment.delete(slotKey)
+    }
+
+    return false
   }
-  return resolveFixedSlot(ref, allGroupStandings)
+
+  if (backtrack(0)) return assignment
+  return assignThirdPlaceGreedy(rankedThirds)
 }
 
 /**
  * Derive Round of 32 participants from computed group standings.
  * Winners and runners-up come directly from standings; third-place slots
- * are filled from the best-third ranking in bracket slot order.
+ * use constraint-aware assignment across all 8 third slots.
  */
 export function deriveR32Matchups(
   allGroupStandings: Record<string, Standing[]>,
 ): R32Matchup[] {
   const rankedThirds = computeBestThirdPlaceRanking(allGroupStandings)
-  const assignedThirdIds = new Set<string>()
+  const thirdAssignments = assignThirdPlaceTeams(rankedThirds)
 
   return R32_SLOT_DEFINITIONS.map(({ matchId, home, away }) => ({
     matchId,
-    homeTeamId: resolveSlotTeam(
-      home,
-      allGroupStandings,
-      rankedThirds,
-      assignedThirdIds,
-    ),
-    awayTeamId: resolveSlotTeam(
-      away,
-      allGroupStandings,
-      rankedThirds,
-      assignedThirdIds,
-    ),
+    homeTeamId:
+      home.type === "third"
+        ? (thirdAssignments.get(thirdSlotKey(matchId, "home")) ?? null)
+        : resolveFixedSlot(home, allGroupStandings),
+    awayTeamId:
+      away.type === "third"
+        ? (thirdAssignments.get(thirdSlotKey(matchId, "away")) ?? null)
+        : resolveFixedSlot(away, allGroupStandings),
   }))
 }
 

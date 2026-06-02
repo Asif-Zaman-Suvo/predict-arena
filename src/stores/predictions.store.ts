@@ -15,10 +15,17 @@ interface PredictionsState {
   knockoutPredictions: Record<string, string | null>
 }
 
+interface HydratePayload {
+  matchPredictions: Record<string, MatchPrediction | null>
+  knockoutPredictions: Record<string, string | null>
+}
+
 interface PredictionsActions {
   setPrediction: (matchId: string, homeScore: number, awayScore: number) => void
   clearPrediction: (matchId: string) => void
   setKnockoutPrediction: (matchId: string, teamId: string | null) => void
+  hydrateFromDatabase: (payload: HydratePayload) => void
+  resetAllPredictions: () => void
 }
 
 export type PredictionsStore = PredictionsState & PredictionsActions
@@ -65,6 +72,15 @@ export const usePredictionsStore = create<PredictionsStore>()(
             [matchId]: teamId,
           },
         })),
+
+      hydrateFromDatabase: ({ matchPredictions, knockoutPredictions }) =>
+        set({ matchPredictions, knockoutPredictions }),
+
+      resetAllPredictions: () =>
+        set({
+          matchPredictions: buildEmptyMatchPredictions(),
+          knockoutPredictions: {},
+        }),
     }),
     {
       name: "pa:predictions",
