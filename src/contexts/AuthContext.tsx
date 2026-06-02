@@ -136,9 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, displayName: string) => {
     setIsRateLimited(false)
-    const result = await signUpWithEmail(email, password, displayName, {
-      skipEmailConfirmation: true // Always skip email confirmation for instant signup
-    })
+    const result = await signUpWithEmail(email, password, displayName)
 
     if (result.error && isRateLimitError({ message: result.error } as AuthError)) {
       setIsRateLimited(true)

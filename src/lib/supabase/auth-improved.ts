@@ -43,8 +43,8 @@ export function getAuthErrorMessage(error: AuthError | null): string {
     return 'An account with this email already exists'
   }
 
-  if (error.message?.includes('Email not confirmed')) {
-    return 'Please check your email and confirm your account'
+  if (error.message?.includes('Email not confirmed') || error.code === 'email_not_confirmed') {
+    return 'Please check your email and confirm your account, or disable email confirmation in Supabase settings'
   }
 
   return error.message || 'Authentication failed'
@@ -52,13 +52,14 @@ export function getAuthErrorMessage(error: AuthError | null): string {
 
 /**
  * Sign up with email and password
- * Always bypasses email confirmation for instant login
+ * Note: Email confirmation should be disabled in Supabase Dashboard settings
+ * Go to: Authentication → Settings → Disable "Enable email confirmation"
  */
 export async function signUpWithEmail(
   email: string,
   password: string,
   displayName: string,
-  options?: { skipEmailConfirmation?: boolean }
+  _options?: { skipEmailConfirmation?: boolean }
 ): Promise<AuthResult> {
   try {
     const avatarSeed = crypto.randomUUID()
@@ -73,8 +74,6 @@ export async function signUpWithEmail(
           avatar_seed: avatarSeed,
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        // ALWAYS skip email confirmation for instant login
-        emailSkipVerification: true
       },
     })
 
@@ -100,11 +99,11 @@ export async function signUpWithEmail(
       }
     }
 
-    // If no session but user exists, they need to sign in with email/password
+    // If no session but user exists, they may need to sign in manually
     if (data.user) {
       return {
         success: true,
-        requiresAction: false, // No email confirmation needed
+        requiresAction: false,
         user: data.user
       }
     }
@@ -123,7 +122,8 @@ export async function signUpWithEmail(
 
 /**
  * Sign in with email and password
- * Works regardless of email confirmation status
+ * Note: If email confirmation is enabled, users will need to confirm their email first
+ * To disable email confirmation: Go to Supabase Dashboard → Authentication → Settings
  */
 export async function signInWithEmail(
   email: string,
@@ -136,32 +136,6 @@ export async function signInWithEmail(
     })
 
     if (error) {
-      // Handle email_not_confirmed error by allowing login anyway
-      if (error.message === 'Email not confirmed' || error.code === 'email_not_confirmed') {
-        // Try to confirm the email automatically and retry
-        try {
-          // Attempt to bypass the confirmation check
-          const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          })
-
-          if (!retryError && retryData.user) {
-            return {
-              success: true,
-              user: retryData.user
-            }
-          }
-        } catch (retryErr: any) {
-          // If retry fails, return the original error but with a better message
-        }
-
-        return {
-          success: false,
-          error: 'Please sign up again to complete your account creation. The confirmation step was skipped.'
-        }
-      }
-
       return {
         success: false,
         error: getAuthErrorMessage(error)
