@@ -1,12 +1,10 @@
 /**
  * Improved Authentication Utilities
- * Handles rate limits, provides multiple auth methods, and better error handling
+ * Handles rate limits and better error handling
  */
 
 import { supabase } from './client'
 import type { AuthError } from '@supabase/supabase-js'
-
-export type AuthMethod = 'email' | 'magic-link' | 'social'
 
 export interface AuthResult {
   success: boolean
@@ -58,8 +56,7 @@ export function getAuthErrorMessage(error: AuthError | null): string {
 export async function signUpWithEmail(
   email: string,
   password: string,
-  displayName: string,
-  _options?: { skipEmailConfirmation?: boolean }
+  displayName: string
 ): Promise<AuthResult> {
   try {
     const avatarSeed = crypto.randomUUID()
@@ -155,44 +152,6 @@ export async function signInWithEmail(
 }
 
 /**
- * Sign in with magic link (passwordless)
- */
-export async function signInWithMagicLink(email: string): Promise<AuthResult> {
-  try {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      }
-    })
-
-    if (error) {
-      if (isRateLimitError(error)) {
-        return {
-          success: false,
-          error: getAuthErrorMessage(error),
-          requiresAction: true
-        }
-      }
-      return {
-        success: false,
-        error: getAuthErrorMessage(error)
-      }
-    }
-
-    return {
-      success: true,
-      requiresAction: true
-    }
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || 'Magic link failed'
-    }
-  }
-}
-
-/**
  * Sign out
  */
 export async function signOut(): Promise<{ error?: string }> {
@@ -205,58 +164,4 @@ export async function signOut(): Promise<{ error?: string }> {
   } catch (error: any) {
     return { error: error.message || 'Sign out failed' }
   }
-}
-
-/**
- * Resend confirmation email
- */
-export async function resendConfirmationEmail(email: string): Promise<AuthResult> {
-  try {
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      }
-    })
-
-    if (error) {
-      if (isRateLimitError(error)) {
-        return {
-          success: false,
-          error: getAuthErrorMessage(error),
-          requiresAction: true
-        }
-      }
-      return {
-        success: false,
-        error: getAuthErrorMessage(error)
-      }
-    }
-
-    return { success: true }
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || 'Failed to resend email'
-    }
-  }
-}
-
-/**
- * Check if we're in development mode
- */
-export function isDevelopmentMode(): boolean {
-  return process.env.NODE_ENV === 'development' ||
-         window.location.hostname === 'localhost'
-}
-
-/**
- * Get recommended auth method based on environment
- */
-export function getRecommendedAuthMethod(): AuthMethod {
-  if (isDevelopmentMode()) {
-    return 'email' // Direct email/password in dev
-  }
-  return 'magic-link' // Magic links in production for better UX
 }
