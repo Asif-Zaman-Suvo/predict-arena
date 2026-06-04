@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Pencil } from "lucide-react"
 import { getDiceBearAvatarUrl } from "@/src/lib/avatars"
 import { GROUP_MATCH_COUNT, countCompletedGroupPredictions } from "@/src/lib/tournament"
-import { computeUserScore } from "@/src/lib/scoring"
 import { usePredictionsOptimistic } from "@/src/components/providers/PredictionsOptimisticProvider"
 import { useTournamentDerived } from "@/src/stores/tournament.selectors"
 import { useUserStore } from "@/src/stores/user.store"
@@ -43,8 +42,6 @@ function computeProfileStats(
   >["matchPredictions"],
   r32Matchups: ReturnType<typeof useTournamentDerived>["r32Matchups"],
   thirdPlaceRanking: ReturnType<typeof useTournamentDerived>["thirdPlaceRanking"],
-  displayName: string,
-  avatarSeed: string,
 ) {
   if (!hydrated) return null
 
@@ -54,13 +51,10 @@ function computeProfileStats(
   ).length
   const qualifiedThirds = thirdPlaceRanking.filter((e) => e.qualifies).length
 
-  const score = computeUserScore({ matchPredictions })
-
   return {
     groupCompleted,
     r32Ready,
     qualifiedThirds,
-    score: score.totalPoints,
   }
 }
 
@@ -78,8 +72,6 @@ export function ProfilePageContent() {
     matchPredictions,
     r32Matchups,
     thirdPlaceRanking,
-    displayName,
-    avatarSeed,
   )
 
   const shownName = displayName.trim() || "You"
@@ -162,11 +154,6 @@ export function ProfilePageContent() {
           <StatCard
             label="Best 3rd Qualified"
             value={stats ? `${stats.qualifiedThirds} / 8` : "— / 8"}
-            skeleton={!hydrated}
-          />
-          <StatCard
-            label="Your Score"
-            value={stats ? String(stats.score) : "—"}
             skeleton={!hydrated}
           />
         </div>
