@@ -18,6 +18,11 @@ export const BRACKET_ROUNDS: BracketRoundConfig[] = [
   { stage: "final", label: "Final", shortLabel: "Final" },
 ]
 
+/** Knockout columns in bracket UI (3rd place is rendered above final, no connectors). */
+export const BRACKET_MAIN_ROUNDS = BRACKET_ROUNDS.filter(
+  (round) => round.stage !== "3rd",
+)
+
 export interface ResolvedBracketMatch {
   id: string
   stage: KnockoutStage
@@ -152,14 +157,71 @@ export function resolveBracket(
   return byStage
 }
 
-export function getRoundGap(roundIndex: number): number {
-  const slotHeight = 56
-  const baseGap = 8
+/** Team row height in BracketMatch (h-11 for touch targets). */
+export const BRACKET_ROW_HEIGHT = 44
 
-  if (roundIndex === 0) return baseGap
+/** Match card: 1px borders + p-2 + gap-1 + two team rows */
+export const BRACKET_MATCH_HEIGHT =
+  2 + 16 + 4 + BRACKET_ROW_HEIGHT * 2
+
+/** Round label (text-xs line + mb-3) above the match column */
+export const BRACKET_ROUND_LABEL_HEIGHT = 28
+
+/** Space between third-place and final cards in the final column */
+export const BRACKET_3RD_FINAL_GAP = 24
+
+const BASE_MATCH_GAP = 8
+
+export function getRoundGap(roundIndex: number): number {
+  if (roundIndex === 0) return BASE_MATCH_GAP
 
   const previousGap = getRoundGap(roundIndex - 1)
-  return (slotHeight + previousGap) * 2 - slotHeight
+  return (
+    (BRACKET_MATCH_HEIGHT + previousGap) * 2 - BRACKET_MATCH_HEIGHT
+  )
+}
+
+/** Top margin for the first match in a round (aligns with feeder pair midpoint). */
+export function getFirstMatchMarginTop(roundIndex: number): number {
+  if (roundIndex === 0) return 0
+  return BRACKET_MATCH_HEIGHT + getRoundGap(roundIndex - 1)
+}
+
+/** Center Y of a match within the match column (below the round label). */
+export function getMatchCenterY(roundIndex: number, matchIndex: number): number {
+  const gap = getRoundGap(roundIndex)
+  const lead = getFirstMatchMarginTop(roundIndex)
+  return (
+    lead + matchIndex * (BRACKET_MATCH_HEIGHT + gap) + BRACKET_MATCH_HEIGHT / 2
+  )
+}
+
+/** Total height of the match column for a round (connector SVG height). */
+export function getRoundColumnHeight(
+  matchCount: number,
+  roundIndex: number,
+): number {
+  if (matchCount === 0) return 0
+  const gap = getRoundGap(roundIndex)
+  const lead = getFirstMatchMarginTop(roundIndex)
+  return lead + matchCount * BRACKET_MATCH_HEIGHT + (matchCount - 1) * gap
+}
+
+/** Y offset from column top to final match top (aligned with SF feeder midpoint). */
+export function getFinalMatchTopOffset(finalRoundIndex: number): number {
+  return (
+    BRACKET_ROUND_LABEL_HEIGHT + getFirstMatchMarginTop(finalRoundIndex)
+  )
+}
+
+export function getFinalRunnerUpId(
+  finalMatch: ResolvedBracketMatch,
+  championTeamId: string | null,
+): string | null {
+  if (!championTeamId) return null
+  if (finalMatch.homeTeamId === championTeamId) return finalMatch.awayTeamId
+  if (finalMatch.awayTeamId === championTeamId) return finalMatch.homeTeamId
+  return null
 }
 
 export function buildMatchAriaLabel(

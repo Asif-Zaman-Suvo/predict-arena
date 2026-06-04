@@ -1,19 +1,20 @@
 "use client"
 
+import { Fragment } from "react"
 import {
-  BRACKET_ROUNDS,
-  getRoundGap,
+  BRACKET_MAIN_ROUNDS,
+  BRACKET_ROUND_LABEL_HEIGHT,
+  getMatchCenterY,
   resolveBracket,
 } from "@/src/lib/bracket"
-import { r32MatchupsToRecord } from "@/src/lib/r32-slots"
 import { buildTeamMap } from "@/src/lib/teams"
 import { teams } from "@/src/data"
 import { cn } from "@/src/lib/utils"
 import { BracketConnector } from "./BracketConnector"
+import { BracketFinalColumn } from "./BracketFinalColumn"
 import { BracketRound } from "./BracketRound"
 
 const teamsById = buildTeamMap(teams)
-const ROUND_HEADER_OFFSET = 36
 
 interface KnockoutBracketProps {
   knockoutPredictions: Record<string, string | null>
@@ -26,33 +27,26 @@ interface KnockoutBracketProps {
   skeleton?: boolean
 }
 
-function SingleMatchConnector({
-  fromGap,
-  className,
-}: {
-  fromGap: number
-  className?: string
-}) {
-  const width = 32
-  const y = 56 / 2
-
-  return (
-    <svg
-      aria-hidden="true"
-      className={cn("shrink-0 self-start", className)}
-      width={width}
-      height={56}
-      viewBox={`0 0 ${width} 56`}
-      fill="none"
-    >
-      <path
-        d={`M 0 ${y} H ${width}`}
-        stroke="var(--border)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </svg>
-  )
+function toMatchProps(
+  match: ReturnType<typeof resolveBracket>["r32"][0],
+  isEditable: boolean,
+  onSelectWinner: ((matchId: string, teamId: string) => void) | undefined,
+  skeleton: boolean,
+) {
+  return {
+    matchId: match.id,
+    homeTeam: match.homeTeamId
+      ? (teamsById[match.homeTeamId] ?? null)
+      : null,
+    awayTeam: match.awayTeamId
+      ? (teamsById[match.awayTeamId] ?? null)
+      : null,
+    winnerTeamId: match.winnerTeamId,
+    teamsById,
+    isEditable,
+    onSelectWinner,
+    skeleton,
+  }
 }
 
 export function KnockoutBracket({
@@ -64,23 +58,22 @@ export function KnockoutBracket({
 }: KnockoutBracketProps) {
   const resolved = resolveBracket(knockoutPredictions, r32Matchups)
 
-  const rounds = BRACKET_ROUNDS.map((round, roundIndex) => ({
+  const rounds = BRACKET_MAIN_ROUNDS.map((round, roundIndex) => ({
     ...round,
     roundIndex,
-    matches: resolved[round.stage].map((match) => ({
-      matchId: match.id,
-      homeTeam: match.homeTeamId
-        ? (teamsById[match.homeTeamId] ?? null)
-        : null,
-      awayTeam: match.awayTeamId
-        ? (teamsById[match.awayTeamId] ?? null)
-        : null,
-      winnerTeamId: match.winnerTeamId,
-      teamsById,
-      isEditable,
-      onSelectWinner,
-    })),
+    matches: resolved[round.stage].map((m) =>
+      toMatchProps(m, isEditable, onSelectWinner, skeleton),
+    ),
   }))
+
+  const thirdPlaceMatch = resolved["3rd"][0]
+    ? toMatchProps(
+        resolved["3rd"][0],
+        isEditable,
+        onSelectWinner,
+        skeleton,
+      )
+    : null
 
   return (
     <div className="relative">
@@ -97,49 +90,57 @@ export function KnockoutBracket({
         )}
         aria-describedby="bracket-scroll-hint"
       >
-        <div
-          className={cn(
-            "flex min-w-max items-start gap-1 px-1",
-            "lg:min-w-0 lg:w-full lg:justify-between",
-            "print:min-w-0 print:w-full print:justify-between",
-          )}
-        >
+        {/* Flat row: round → connector → round → … so lines touch the next column */}
+        <div className="flex min-w-max items-start px-1">
           {rounds.map((round, index) => {
             const nextRound = rounds[index + 1]
             const pairCount = nextRound
               ? Math.floor(round.matches.length / 2)
               : 0
-            const isSingleFeed =
-              nextRound?.matches.length === 1 &&
-              round.matches.length === 1
+            const connectsToFinal = nextRound?.stage === "final"
+
+            if (round.stage === "final") {
+              const sfRound = rounds.find((r) => r.stage === "sf")
+              return (
+                <BracketFinalColumn
+                  key={round.stage}
+                  semifinalRoundIndex={sfRound?.roundIndex ?? 3}
+                  finalRoundIndex={round.roundIndex}
+                  thirdPlace={thirdPlaceMatch}
+                  finalMatch={round.matches[0]}
+                  skeleton={skeleton}
+                />
+              )
+            }
 
             return (
-              <div key={round.stage} className="flex items-start">
+              <Fragment key={round.stage}>
                 <BracketRound
                   label={round.label}
                   roundIndex={round.roundIndex}
                   matches={round.matches}
                   skeleton={skeleton}
                 />
-                {nextRound && (
+                {nextRound && pairCount > 0 ? (
                   <div
-                    className="mx-1 shrink-0"
-                    style={{ marginTop: ROUND_HEADER_OFFSET }}
+                    className="shrink-0 self-start"
+                    style={{ marginTop: BRACKET_ROUND_LABEL_HEIGHT }}
                   >
-                    {isSingleFeed ? (
-                      <SingleMatchConnector
-                        fromGap={getRoundGap(round.roundIndex)}
-                      />
-                    ) : pairCount > 0 ? (
-                      <BracketConnector
-                        pairCount={pairCount}
-                        fromGap={getRoundGap(round.roundIndex)}
-                        toGap={getRoundGap(nextRound.roundIndex)}
-                      />
-                    ) : null}
+                    <BracketConnector
+                      pairCount={pairCount}
+                      fromRoundIndex={round.roundIndex}
+                      toRoundIndex={
+                        connectsToFinal ? undefined : nextRound.roundIndex
+                      }
+                      targetCenterY={
+                        connectsToFinal
+                          ? getMatchCenterY(nextRound.roundIndex, 0)
+                          : undefined
+                      }
+                    />
                   </div>
-                )}
-              </div>
+                ) : null}
+              </Fragment>
             )
           })}
         </div>

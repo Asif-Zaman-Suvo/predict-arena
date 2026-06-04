@@ -1,33 +1,44 @@
 "use client"
 
+import {
+  BRACKET_MATCH_HEIGHT,
+  getMatchCenterY,
+  getRoundColumnHeight,
+} from "@/src/lib/bracket"
 import { cn } from "@/src/lib/utils"
 
-const SLOT_HEIGHT = 56
+/** Width of fork between two adjacent round columns (lines meet next column). */
+export const BRACKET_CONNECTOR_WIDTH = 40
 
 interface BracketConnectorProps {
   pairCount: number
-  fromGap: number
-  toGap: number
+  fromRoundIndex: number
+  toRoundIndex?: number
+  /** Override target Y (e.g. final match below third-place block). */
+  targetCenterY?: number | ((pairIndex: number) => number)
   className?: string
-}
-
-function matchCenterY(index: number, gap: number): number {
-  return index * (SLOT_HEIGHT + gap) + SLOT_HEIGHT / 2
 }
 
 export function BracketConnector({
   pairCount,
-  fromGap,
-  toGap,
+  fromRoundIndex,
+  toRoundIndex,
+  targetCenterY,
   className,
 }: BracketConnectorProps) {
-  const width = 32
+  const width = BRACKET_CONNECTOR_WIDTH
   const paths: string[] = []
+  const targetYs: number[] = []
 
   for (let pair = 0; pair < pairCount; pair++) {
-    const topY = matchCenterY(pair * 2, fromGap)
-    const bottomY = matchCenterY(pair * 2 + 1, fromGap)
-    const targetY = matchCenterY(pair, toGap)
+    const topY = getMatchCenterY(fromRoundIndex, pair * 2)
+    const bottomY = getMatchCenterY(fromRoundIndex, pair * 2 + 1)
+    const targetY =
+      typeof targetCenterY === "function"
+        ? targetCenterY(pair)
+        : (targetCenterY ??
+          getMatchCenterY(toRoundIndex ?? fromRoundIndex, pair))
+    targetYs.push(targetY)
     const midX = width / 2
 
     paths.push(
@@ -36,9 +47,16 @@ export function BracketConnector({
     )
   }
 
-  const fromCount = pairCount * 2
-  const svgHeight =
-    fromCount * SLOT_HEIGHT + Math.max(0, fromCount - 1) * fromGap
+  const fromMatchCount = pairCount * 2
+  const fromColumnHeight = getRoundColumnHeight(
+    fromMatchCount,
+    fromRoundIndex,
+  )
+  const maxTargetY = Math.max(...targetYs)
+  const svgHeight = Math.max(
+    fromColumnHeight,
+    maxTargetY + BRACKET_MATCH_HEIGHT / 2,
+  )
 
   return (
     <svg

@@ -4,7 +4,11 @@ import { AnimatePresence, motion } from "framer-motion"
 import type { Team } from "@/src/types/tournament"
 import { TeamFlag } from "@/src/components/teams/TeamFlag"
 import { useMotionDuration } from "@/src/lib/motion"
+import { BRACKET_MATCH_HEIGHT, BRACKET_ROW_HEIGHT } from "@/src/lib/bracket"
 import { cn } from "@/src/lib/utils"
+
+const teamRowClass =
+  "flex w-full items-center gap-2 rounded border-l-2 px-2 text-sm"
 
 export interface BracketMatchProps {
   matchId: string
@@ -32,7 +36,10 @@ function TeamRow({
 
   if (skeleton) {
     return (
-      <div className="flex h-7 items-center gap-2 rounded bg-surface-2 px-2">
+      <div
+        className="flex items-center gap-2 rounded bg-surface-2 px-2"
+        style={{ height: BRACKET_ROW_HEIGHT }}
+      >
         <div className="h-4 w-4 rounded bg-surface" />
         <div className="h-3 flex-1 rounded bg-surface" />
       </div>
@@ -44,11 +51,12 @@ function TeamRow({
   return (
     <div
       className={cn(
-        "flex h-7 items-center gap-2 rounded border-l-2 px-2 text-sm",
+        teamRowClass,
         isWinner
           ? "border-l-gold bg-surface-2 font-medium"
           : "border-l-transparent",
       )}
+      style={{ height: BRACKET_ROW_HEIGHT }}
     >
       {team ? (
         <TeamFlag emoji={team.flagEmoji} name={team.name} size="sm" />
@@ -92,12 +100,14 @@ function SelectableTeamRow({
       aria-label={`Pick ${team.name} to win ${label}`}
       aria-pressed={isWinner}
       className={cn(
-        "flex h-7 w-full min-h-11 items-center gap-2 rounded border-l-2 px-2 text-left text-sm transition-colors",
+        teamRowClass,
+        "text-left transition-colors",
         "hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         isWinner
           ? "border-l-gold bg-surface-2 font-medium"
           : "border-l-transparent",
       )}
+      style={{ height: BRACKET_ROW_HEIGHT }}
     >
       <TeamFlag emoji={team.flagEmoji} name={team.name} size="sm" />
       <span className="min-w-0 truncate">{team.name}</span>
@@ -153,9 +163,10 @@ export function BracketMatch({
     <div
       role="group"
       aria-label={ariaLabel}
-      className="w-44 shrink-0 rounded-lg border border-border bg-surface p-2"
+      className="box-border flex w-44 shrink-0 flex-col rounded-lg border border-border bg-surface p-2"
+      style={{ height: BRACKET_MATCH_HEIGHT }}
     >
-      <div className="space-y-1">
+      <div className="flex flex-col gap-1">
         {canPick && resolvedHome ? (
           <SelectableTeamRow
             team={resolvedHome}

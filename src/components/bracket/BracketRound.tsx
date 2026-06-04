@@ -1,7 +1,6 @@
 "use client"
 
-import { cn } from "@/src/lib/utils"
-import { getRoundGap } from "@/src/lib/bracket"
+import { getFirstMatchMarginTop, getRoundGap } from "@/src/lib/bracket"
 import { BracketMatch, type BracketMatchProps } from "./BracketMatch"
 
 export interface BracketRoundProps {
@@ -20,23 +19,30 @@ export function BracketRound({
   const gap = getRoundGap(roundIndex)
 
   return (
-    <section
-      aria-label={label}
-      className="flex shrink-0 flex-col"
-      style={{ gap: `${gap}px` }}
-    >
+    <section aria-label={label} className="flex shrink-0 flex-col">
       <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-text-muted">
         {label}
       </h3>
-      {matches.map((match, index) => (
-        <BracketMatch
-          key={match.matchId}
-          {...match}
-          roundLabel={label}
-          matchIndex={index}
-          skeleton={skeleton}
-        />
-      ))}
+      <div className="flex flex-col" style={{ gap: `${gap}px` }}>
+        {matches.map((match, index) => {
+          const marginTop =
+            index === 0 ? getFirstMatchMarginTop(roundIndex) : undefined
+
+          return (
+            <div
+              key={match.matchId}
+              style={marginTop ? { marginTop: `${marginTop}px` } : undefined}
+            >
+              <BracketMatch
+                {...match}
+                roundLabel={label}
+                matchIndex={index}
+                skeleton={skeleton}
+              />
+            </div>
+          )
+        })}
+      </div>
     </section>
   )
 }
