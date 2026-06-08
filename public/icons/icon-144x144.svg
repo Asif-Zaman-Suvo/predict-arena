@@ -1,0 +1,27 @@
+<svg width="144" height="144" viewBox="0 0 144 144" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="144" height="144" fill="#0a1628" rx="21.599999999999998"/>
+
+  <!-- Soccer ball pattern -->
+  <g transform="translate(72, 72)">
+    <!-- Outer circle -->
+    <circle cx="0" cy="0" r="50.4" fill="none" stroke="white" stroke-width="4.32"/>
+
+    <!-- Pentagon pattern (simplified) -->
+    <path d="M0,-36 L34.56,-11.52 L21.599999999999998,28.8 L-21.599999999999998,28.8 L-34.56,-11.52 Z"
+          fill="white" stroke="#0a1628" stroke-width="2.88"/>
+
+    <!-- Inner pentagon -->
+    <path d="M0,-21.599999999999998 L20.160000000000004,-7.2 L12.959999999999999,17.28 L-12.959999999999999,17.28 L-20.160000000000004,-7.2 Z"
+          fill="#0a1628" stroke="white" stroke-width="2.16"/>
+  </g>
+
+  <!-- Trophy/winner indication -->
+  <g transform="translate(108, 108)">
+    <circle cx="0" cy="0" r="11.52" fill="#FFD700"/>
+    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle"
+          font-family="Arial, sans-serif" font-weight="bold" font-size="14.4" fill="#0a1628">
+      ⚡
+    </text>
+  </g>
+</svg>
