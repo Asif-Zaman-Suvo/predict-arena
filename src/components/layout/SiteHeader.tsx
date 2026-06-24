@@ -19,6 +19,7 @@ const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/fixtures", label: "Fixtures" },
   { href: "/groups", label: "Groups" },
+  { href: "/best-third-place", label: "Best 3rd" },
   { href: "/brackets", label: "Brackets" },
   { href: "/community", label: "Community" },
   { href: "/profile", label: "Profile" },
