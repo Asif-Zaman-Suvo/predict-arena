@@ -22,6 +22,7 @@ import {
   TabsTrigger,
 } from "@/src/components/ui/tabs"
 import { CheckCircle2, ArrowRight } from "lucide-react"
+import officialResults from "@/src/data/results.json"
 
 interface FixturesPageContentProps {
   bundle: FixturesBundle
@@ -195,6 +196,9 @@ export function FixturesPageContent({ bundle }: FixturesPageContentProps) {
                         homeTeam={homeTeam}
                         awayTeam={awayTeam}
                         venue={venue}
+                        officialResult={
+                          (officialResults as Record<string, { homeScore: number; awayScore: number }>)[match.id] ?? null
+                        }
                       />
                     )
                   })}
