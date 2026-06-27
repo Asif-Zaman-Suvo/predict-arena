@@ -4,17 +4,18 @@ import Link from "next/link"
 import { matches, teams, venues } from "@/src/data"
 import { buildTeamMap } from "@/src/lib/teams"
 import { usePredictionsOptimistic } from "@/src/components/providers/PredictionsOptimisticProvider"
-import { useTournamentDerived } from "@/src/stores/tournament.selectors"
+import { computeTournamentDerived } from "@/src/stores/tournament.selectors"
 import { useHydrated } from "@/src/stores/hydration"
 import { GroupStandingsTable } from "@/src/components/groups/GroupStandingsTable"
 import { GroupStandingsTableSkeleton } from "@/src/components/groups/GroupStandingsTableSkeleton"
 import { MatchCard } from "@/src/components/matches/MatchCard"
 import { MatchCardSkeleton } from "@/src/components/matches/MatchCardSkeleton"
 import { Button } from "@/src/components/ui/button"
+import officialResults from "@/src/data/results.json"
 
 const teamsById = buildTeamMap(teams)
-
 const venuesById = Object.fromEntries(venues.map((venue) => [venue.id, venue]))
+const resultsMap = officialResults as Record<string, { homeScore: number; awayScore: number }>
 
 interface GroupDetailContentProps {
   groupId: string
@@ -26,8 +27,15 @@ export function GroupDetailContent({
   groupName,
 }: GroupDetailContentProps) {
   const hydrated = useHydrated()
-  const { groupStandings, groupComplete } = useTournamentDerived()
   const { matchPredictions } = usePredictionsOptimistic()
+
+  // Merge official results over user predictions so standings reflect real scores
+  const mergedPredictions = { ...matchPredictions }
+  for (const [matchId, result] of Object.entries(resultsMap)) {
+    mergedPredictions[matchId] = { homeScore: result.homeScore, awayScore: result.awayScore }
+  }
+
+  const { groupStandings, groupComplete } = computeTournamentDerived(mergedPredictions)
 
   const standings = groupStandings[groupId] ?? []
   const standingsReady = groupComplete[groupId] ?? false
@@ -112,6 +120,7 @@ export function GroupDetailContent({
                     awayTeam={awayTeam}
                     venue={venue}
                     prediction={matchPredictions[match.id] ?? null}
+                    officialResult={resultsMap[match.id] ?? null}
                   />
                 )
               })}

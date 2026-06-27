@@ -7,12 +7,18 @@ import {
 } from "@/src/lib/match-display"
 import { cn, formatScore } from "@/src/lib/utils"
 
+interface OfficialResult {
+  homeScore: number
+  awayScore: number
+}
+
 interface MatchCardProps {
   match: Match
   homeTeam: Team
   awayTeam: Team
   venue: Venue
   prediction?: MatchPrediction | null
+  officialResult?: OfficialResult | null
   className?: string
 }
 
@@ -22,9 +28,11 @@ export function MatchCard({
   awayTeam,
   venue,
   prediction,
+  officialResult,
   className,
 }: MatchCardProps) {
   const kickoff = formatKickoffTime(match.date, venue.timezone)
+  const isFinished = officialResult != null
 
   return (
     <article
@@ -46,23 +54,36 @@ export function MatchCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-center px-1">
-          <time
-            dateTime={match.date}
-            className="text-xl font-bold tabular-nums tracking-tight"
-          >
-            {kickoff}
-          </time>
-          {prediction ? (
-            <span className="mt-0.5 text-sm font-semibold text-gold">
-              {formatScore(prediction.homeScore, prediction.awayScore)}
-            </span>
+          {isFinished ? (
+            <>
+              <span className="text-xs font-semibold uppercase tracking-widest text-text-muted">
+                FT
+              </span>
+              <span className="mt-0.5 text-xl font-bold tabular-nums tracking-tight text-gold">
+                {officialResult.homeScore} – {officialResult.awayScore}
+              </span>
+            </>
           ) : (
-            <span
-              className="mt-0.5 text-sm text-text-muted"
-              aria-label="No prediction"
-            >
-              —
-            </span>
+            <>
+              <time
+                dateTime={match.date}
+                className="text-xl font-bold tabular-nums tracking-tight"
+              >
+                {kickoff}
+              </time>
+              {prediction ? (
+                <span className="mt-0.5 text-sm font-semibold text-gold">
+                  {formatScore(prediction.homeScore, prediction.awayScore)}
+                </span>
+              ) : (
+                <span
+                  className="mt-0.5 text-sm text-text-muted"
+                  aria-label="No prediction"
+                >
+                  —
+                </span>
+              )}
+            </>
           )}
         </div>
 
