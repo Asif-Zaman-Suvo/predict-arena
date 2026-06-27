@@ -4,7 +4,7 @@ import Link from "next/link"
 import { matches, teams, venues } from "@/src/data"
 import { buildTeamMap } from "@/src/lib/teams"
 import { usePredictionsOptimistic } from "@/src/components/providers/PredictionsOptimisticProvider"
-import { computeTournamentDerived } from "@/src/stores/tournament.selectors"
+import { useTournamentDerived } from "@/src/stores/tournament.selectors"
 import { useHydrated } from "@/src/stores/hydration"
 import { GroupStandingsTable } from "@/src/components/groups/GroupStandingsTable"
 import { GroupStandingsTableSkeleton } from "@/src/components/groups/GroupStandingsTableSkeleton"
@@ -28,14 +28,7 @@ export function GroupDetailContent({
 }: GroupDetailContentProps) {
   const hydrated = useHydrated()
   const { matchPredictions } = usePredictionsOptimistic()
-
-  // Merge official results over user predictions so standings reflect real scores
-  const mergedPredictions = { ...matchPredictions }
-  for (const [matchId, result] of Object.entries(resultsMap)) {
-    mergedPredictions[matchId] = { homeScore: result.homeScore, awayScore: result.awayScore }
-  }
-
-  const { groupStandings, groupComplete } = computeTournamentDerived(mergedPredictions)
+  const { groupStandings, groupComplete } = useTournamentDerived()
 
   const standings = groupStandings[groupId] ?? []
   const standingsReady = groupComplete[groupId] ?? false

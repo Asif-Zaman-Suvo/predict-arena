@@ -82,8 +82,23 @@ export function computeTournamentDerived(
   }
 }
 
+import officialResultsRaw from "../data/results.json"
+
+const officialResults = officialResultsRaw as Record<string, { homeScore: number; awayScore: number }>
+
+/** Merge official results over user predictions — official results always win. */
+function mergeWithOfficialResults(
+  matchPredictions: Record<string, MatchPrediction | null>,
+): Record<string, MatchPrediction | null> {
+  const merged = { ...matchPredictions }
+  for (const [matchId, result] of Object.entries(officialResults)) {
+    merged[matchId] = { homeScore: result.homeScore, awayScore: result.awayScore }
+  }
+  return merged
+}
+
 /** Derived tournament state from optimistic predictions (instant UI). */
 export function useTournamentDerived(): TournamentDerived {
   const { matchPredictions } = usePredictionsOptimistic()
-  return computeTournamentDerived(matchPredictions)
+  return computeTournamentDerived(mergeWithOfficialResults(matchPredictions))
 }
