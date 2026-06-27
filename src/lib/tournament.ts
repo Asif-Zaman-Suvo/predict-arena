@@ -7,6 +7,7 @@ import {
   R32_SLOT_DEFINITIONS,
   type R32SlotTeamRef,
 } from "./r32-slots"
+import { lookupAnnexC } from "./annex-c"
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
 
@@ -339,25 +340,60 @@ function assignThirdPlaceTeams(
 /**
  * Derive Round of 32 participants from computed group standings.
  * Winners and runners-up come directly from standings; third-place slots
- * use constraint-aware assignment across all 8 third slots.
+ * are resolved via the official FIFA Annex C 495-row lookup table.
  */
 export function deriveR32Matchups(
   allGroupStandings: Record<string, Standing[]>,
 ): R32Matchup[] {
   const rankedThirds = computeBestThirdPlaceRanking(allGroupStandings)
-  const thirdAssignments = assignThirdPlaceTeams(rankedThirds)
+  const qualifyingGroups = rankedThirds
+    .filter((e) => e.qualifies)
+    .slice(0, 8)
+    .map((e) => e.groupId)
 
-  return R32_SLOT_DEFINITIONS.map(({ matchId, home, away }) => ({
-    matchId,
-    homeTeamId:
+  // Map: winner group letter → third-place group letter (from Annex C)
+  const annexC =
+    qualifyingGroups.length === 8 ? lookupAnnexC(qualifyingGroups) : {}
+
+  return R32_SLOT_DEFINITIONS.map(({ matchId, home, away }) => {
+    const homeTeamId =
       home.type === "third"
-        ? (thirdAssignments.get(thirdSlotKey(matchId, "home")) ?? null)
-        : resolveFixedSlot(home, allGroupStandings),
-    awayTeamId:
-      away.type === "third"
-        ? (thirdAssignments.get(thirdSlotKey(matchId, "away")) ?? null)
-        : resolveFixedSlot(away, allGroupStandings),
-  }))
+        ? resolveThirdSlot(home.candidateGroups, annexC, allGroupStandings)
+        : resolveFixedSlot(home, allGroupStandings)
+
+    let awayTeamId: string | null
+    if (away.type === "third") {
+      // The away "third" slot always faces a group winner (home slot).
+      // Use Annex C: look up which third-place group is assigned to that winner.
+      if (home.type === "winner" && annexC[home.groupId]) {
+        const thirdGroup = annexC[home.groupId]
+        const standings = allGroupStandings[thirdGroup] ?? []
+        awayTeamId = standings[2]?.teamId ?? null
+      } else {
+        awayTeamId = resolveThirdSlot(away.candidateGroups, annexC, allGroupStandings)
+      }
+    } else {
+      awayTeamId = resolveFixedSlot(away, allGroupStandings)
+    }
+
+    return { matchId, homeTeamId, awayTeamId }
+  })
+}
+
+function resolveThirdSlot(
+  candidateGroups: string[],
+  annexC: Record<string, string>,
+  allGroupStandings: Record<string, Standing[]>,
+): string | null {
+  // Find which Annex C winner group maps to a candidate group for this slot
+  for (const [, thirdGroup] of Object.entries(annexC)) {
+    if (candidateGroups.includes(thirdGroup)) {
+      const standings = allGroupStandings[thirdGroup] ?? []
+      const teamId = standings[2]?.teamId ?? null
+      if (teamId) return teamId
+    }
+  }
+  return null
 }
 
 export const GROUP_MATCH_COUNT = matchesData.filter(
